@@ -66,7 +66,7 @@ export function UploadForm({ children }: { children?: ReactNode }) {
           <button
             type="submit"
             disabled={pending || fileError !== null}
-            className="h-12 rounded-lg bg-zinc-900 px-8 text-base font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            className="h-12 rounded-lg bg-primary px-8 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
             {pending ? "업로드 중…" : "업로드"}
           </button>

@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { loginTraineeAction, type TraineeLoginState } from "@/app/actions/trainee";
 
 const inputClass =
-  "h-12 w-full rounded-lg border border-zinc-300 bg-white px-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/20 aria-[invalid=true]:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-300";
+  "h-12 w-full rounded-xl border border-zinc-300 bg-white px-4 text-base text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 aria-[invalid=true]:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-300";
 
 export function TraineeLoginForm() {
   const [state, formAction, pending] = useActionState<TraineeLoginState, FormData>(loginTraineeAction, { empNo: "" });
@@ -51,7 +51,7 @@ export function TraineeLoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="h-12 w-full rounded-lg bg-zinc-900 px-4 text-base font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        className="h-12 w-full rounded-xl bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
       >
         {pending ? "확인 중…" : "로그인"}
       </button>

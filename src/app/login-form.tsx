@@ -18,7 +18,7 @@ export function LoginForm() {
           autoFocus
           aria-invalid={state?.error ? true : undefined}
           aria-describedby={state?.error ? "login-error" : undefined}
-          className="h-12 rounded-lg border border-zinc-300 bg-white px-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-300"
+          className="h-12 rounded-xl border border-zinc-300 bg-white px-4 text-base text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-300"
         />
       </label>
 
@@ -31,7 +31,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={pending}
-        className="h-12 rounded-lg bg-zinc-900 px-4 text-base font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+        className="h-12 rounded-xl bg-primary px-4 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
       >
         {pending ? "확인 중…" : "로그인"}
       </button>

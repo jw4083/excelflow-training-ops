@@ -15,21 +15,21 @@ export async function VacancyBanner() {
   return (
     <div
       role="status"
-      className="flex flex-col gap-1 border-b border-amber-300 bg-amber-50 px-4 py-3 text-base text-amber-950 sm:flex-row sm:items-center sm:justify-between dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+      className="flex flex-col gap-1 border-b border-peach-200 bg-peach-100 px-4 py-3 text-base text-zinc-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
     >
       <p>
         <strong className="font-bold">
           충원이 필요한 자리가 {alert.total}개 있습니다
         </strong>{" "}
         ({parts})
-        <span className="block text-sm text-amber-800 dark:text-amber-300">
+        <span className="block text-sm text-peach-700 dark:text-amber-300">
           {alert.names.join(", ")}
           {rest > 0 ? ` 외 ${rest}명` : ""}
         </span>
       </p>
       <Link
         href="/admin/replies#vacancies"
-        className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-amber-900 px-4 text-base font-semibold text-white hover:bg-amber-800 dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100"
+        className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-base font-semibold text-white hover:bg-primary-hover dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100"
       >
         회신 현황에서 확인
       </Link>

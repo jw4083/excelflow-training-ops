@@ -46,10 +46,10 @@ export function RosterTable({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800">
         <table className="w-full min-w-[40rem] text-left text-base">
           <caption className="sr-only">{filter} 명단</caption>
-          <thead className="bg-zinc-50 text-sm text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-sm text-zinc-600">
             <tr>
               {selectable && (
                 <th scope="col" className="w-14 px-4 py-3 font-medium whitespace-nowrap">
@@ -70,7 +70,7 @@ export function RosterTable({
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
             {page.items.map((t) => (
-              <tr key={t.id}>
+              <tr key={t.id} className="hover:bg-zinc-50">
                 {selectable && (
                   <td className="px-4 py-1">
                     <label className="flex h-11 w-11 cursor-pointer items-center justify-center">
@@ -123,7 +123,7 @@ export function RosterTable({
                 이전
               </Link>
             ) : (
-              <span aria-disabled="true" className="flex h-11 items-center rounded-lg border border-zinc-200 px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
+              <span aria-disabled="true" className="flex h-11 items-center rounded-2xl border border-zinc-200 bg-white px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
                 이전
               </span>
             )}
@@ -135,7 +135,7 @@ export function RosterTable({
                 다음
               </Link>
             ) : (
-              <span aria-disabled="true" className="flex h-11 items-center rounded-lg border border-zinc-200 px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
+              <span aria-disabled="true" className="flex h-11 items-center rounded-2xl border border-zinc-200 bg-white px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
                 다음
               </span>
             )}

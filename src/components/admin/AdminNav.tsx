@@ -28,7 +28,7 @@ export function AdminNav({ replyBadge }: { replyBadge: ReactNode }) {
             aria-current={active ? "page" : undefined}
             className={`flex h-11 shrink-0 items-center rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
               active
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                ? "bg-primary-soft font-semibold text-primary"
                 : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }`}
           >

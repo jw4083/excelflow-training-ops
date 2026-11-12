@@ -110,7 +110,7 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
             aria-current={filter === f ? "page" : undefined}
             className={`inline-flex h-11 items-center rounded-lg border px-4 text-base font-medium ${
               filter === f
-                ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                ? "border-primary bg-primary text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                 : "border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
             }`}
           >
@@ -120,7 +120,7 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
       </nav>
 
       {shown.length === 0 ? (
-        <p className="rounded-lg border border-zinc-200 p-6 text-center text-base text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
+        <p className="rounded-2xl border border-zinc-200 bg-white p-6 text-center text-base text-zinc-600 dark:border-zinc-800 dark:text-zinc-400">
           {rows.length === 0 ? "아직 선정된 교육생이 없습니다." : "해당하는 교육생이 없습니다."}
         </p>
       ) : (
@@ -143,7 +143,7 @@ const KIND_STYLE = {
 function ReplyCard({ row }: { row: ReplyRow }) {
   const { trainee, reply, kind, deadline } = row;
   return (
-    <li className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+    <li className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800">
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-lg font-bold">{trainee.name}</p>
         <p className="text-base text-zinc-600 dark:text-zinc-400">
@@ -180,7 +180,7 @@ function ReplyCard({ row }: { row: ReplyRow }) {
       </dl>
 
       {/* 회신 기한이 지나도 항상 쓸 수 있다 (PRD M2-8) */}
-      <details className="rounded-lg border border-zinc-200 px-4 py-2 dark:border-zinc-800">
+      <details className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 dark:border-zinc-800">
         <summary className="flex h-11 cursor-pointer items-center text-base font-semibold">대신 입력</summary>
         <div className="pb-3 pt-2">
           <ReplyForm

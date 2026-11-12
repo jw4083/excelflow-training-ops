@@ -6,7 +6,7 @@ import { runDrawAction, type DrawState } from "@/app/actions/draw";
 import { MAX_DRAW_SEATS, type DrawFormField } from "@/domain/draw";
 
 const inputClass =
-  "h-12 w-full rounded-lg border border-zinc-300 bg-white px-4 text-base text-zinc-900 outline-none focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/20 aria-[invalid=true]:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-300";
+  "h-12 w-full rounded-lg border border-zinc-300 bg-white px-4 text-base text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 aria-[invalid=true]:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-300";
 
 function Field({ name, label, hint, error, children }: { name: DrawFormField; label: string; hint?: string; error?: string; children: ReactNode }) {
   return (
@@ -138,7 +138,7 @@ export function DrawForm({
           <button
             type="submit"
             disabled={pending || full}
-            className="h-12 rounded-lg bg-zinc-900 px-8 text-base font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+            className="h-12 rounded-lg bg-primary px-8 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
           >
             {pending ? "추첨 중…" : redraw ? "재추첨 실행" : "추첨 실행"}
           </button>

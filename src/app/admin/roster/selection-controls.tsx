@@ -36,7 +36,7 @@ export function SelectionToolbar({ empty }: { empty: boolean }) {
   };
 
   return (
-    <form id={SELECT_FORM_ID} action={formAction} className="flex flex-col gap-2 rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-800">
+    <form id={SELECT_FORM_ID} action={formAction} className="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800">
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <label className="flex h-11 cursor-pointer items-center gap-3 text-base">
           <input type="checkbox" className="h-5 w-5" onChange={(e) => toggleAll(e.target.checked)} />
@@ -45,7 +45,7 @@ export function SelectionToolbar({ empty }: { empty: boolean }) {
         <button
           type="submit"
           disabled={pending}
-          className="h-11 rounded-lg bg-zinc-900 px-6 text-base font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="h-11 rounded-lg bg-primary px-6 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
           {pending ? "처리 중…" : "선택한 사람 선정 처리"}
         </button>

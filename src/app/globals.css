@@ -1,8 +1,43 @@
 @import "tailwindcss";
 
+/*
+ * 디자인 토큰 (캠코 교육 운영 앱)
+ * - 참고: Craft의 정갈한 카드와 넉넉한 여백, Headspace의 친근한 색면과 캐릭터 배치, Linear의 촘촘하고 조용한 목록 배치
+ * - 따뜻한 흰색 배경 · 짙은 남색 글자 · 파란 주요 버튼 · 연한 살구색 안내 카드
+ * - 이 앱은 밝은 화면 하나만 쓴다(어두운 화면 전환 없음): 아래 dark 변형을 끊어 두어 기존 dark: 글자가 작동하지 않는다.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fffbf5; /* 따뜻한 흰색 */
+  --foreground: #14213d; /* 짙은 남색 */
+}
+
+@theme {
+  /* 기존 회색(zinc) 계열을 따뜻한 남색 계열로 바꿔, 화면 전체가 같은 색 체계를 쓰게 한다 */
+  --color-zinc-50: #fbf7f0;
+  --color-zinc-100: #f4eee4;
+  --color-zinc-200: #e8e0d3;
+  --color-zinc-300: #d8cebf;
+  --color-zinc-400: #9aa1b3;
+  --color-zinc-500: #6f7893;
+  --color-zinc-600: #55607f; /* 보조 글자 (흰 바탕 위 대비 5:1 이상) */
+  --color-zinc-700: #3b4767;
+  --color-zinc-800: #232f52;
+  --color-zinc-900: #14213d;
+
+  /* 파란 주요 버튼·선택 표시 */
+  --color-primary: #2459e8;
+  --color-primary-hover: #1b47c4;
+  --color-primary-soft: #e8efff;
+
+  /* 연한 살구색 안내 카드 */
+  --color-peach-50: #fff5ec;
+  --color-peach-100: #ffeadb;
+  --color-peach-200: #fbd4b8;
+  --color-peach-700: #8a4a1d;
+
+  --radius-card: 1.25rem; /* 카드 모서리 (Craft의 둥근 카드) */
 }
 
 @theme inline {
@@ -12,17 +47,22 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   /* 한글이 깨끗하게 보이도록 한글 글꼴을 우선 지정한다 */
   font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", var(--font-geist-sans), Arial, sans-serif;
   font-size: 16px; /* 휴대폰에서 글자가 너무 작아지지 않게 (PRD M2-11) */
+}
+
+/* 키보드로 이동할 때 보이는 파란 테두리 */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* 입력 칸·버튼이 한 번 눌렸다 떼질 때 부드럽게 */
+button,
+a {
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }

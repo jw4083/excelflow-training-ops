@@ -45,7 +45,7 @@ async function RosterContent({ searchParams }: { searchParams: SearchParams }) {
         <a
           href="/admin/export"
           download
-          className="inline-flex h-11 items-center rounded-lg bg-zinc-900 px-5 text-base font-semibold text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
+          className="inline-flex h-11 items-center rounded-lg bg-primary px-5 text-base font-semibold text-white hover:bg-primary-hover dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
           최종 명단 내려받기
         </a>
@@ -53,7 +53,7 @@ async function RosterContent({ searchParams }: { searchParams: SearchParams }) {
 
       <CapacitySummaryBar summary={capacitySummary(data.course?.capacity, data.trainees)} />
 
-      <details open className="rounded-lg border border-zinc-200 px-4 py-3 dark:border-zinc-800">
+      <details open className="rounded-2xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800">
         <summary className="flex min-h-11 cursor-pointer items-center text-base font-semibold">신청자 엑셀 올리기</summary>
         <div className="pt-4">
           <UploadForm />

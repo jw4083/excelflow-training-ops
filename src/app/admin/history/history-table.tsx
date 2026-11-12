@@ -40,10 +40,10 @@ export function HistoryTable({ page, filter, nameOf }: { page: Page<History>; fi
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-800">
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800">
         <table className="w-full min-w-[56rem] text-left text-base">
           <caption className="sr-only">{filter} 변경 이력</caption>
-          <thead className="bg-zinc-50 text-sm text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400">
+          <thead className="border-b border-zinc-200 bg-zinc-50 text-sm text-zinc-600">
             <tr>
               {["일시", "종류", "대상", "변경 전", "변경 후", "사유"].map((h) => (
                 <th key={h} scope="col" className="px-4 py-3 font-medium whitespace-nowrap">
@@ -56,7 +56,7 @@ export function HistoryTable({ page, filter, nameOf }: { page: Page<History>; fi
             {page.items.map((entry) => {
               const target = historyTarget(entry, nameOf);
               return (
-                <tr key={entry.id}>
+                <tr key={entry.id} className="align-top hover:bg-zinc-50">
                   <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatKst(entry.at)}</td>
                   <td className="px-4 py-3">
                     <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium whitespace-nowrap ${KIND_STYLE[entry.kind]}`}>{entry.kind}</span>
@@ -87,7 +87,7 @@ export function HistoryTable({ page, filter, nameOf }: { page: Page<History>; fi
                 이전
               </Link>
             ) : (
-              <span aria-disabled="true" className="flex h-11 items-center rounded-lg border border-zinc-200 px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
+              <span aria-disabled="true" className="flex h-11 items-center rounded-2xl border border-zinc-200 bg-white px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
                 이전
               </span>
             )}
@@ -99,7 +99,7 @@ export function HistoryTable({ page, filter, nameOf }: { page: Page<History>; fi
                 다음
               </Link>
             ) : (
-              <span aria-disabled="true" className="flex h-11 items-center rounded-lg border border-zinc-200 px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
+              <span aria-disabled="true" className="flex h-11 items-center rounded-2xl border border-zinc-200 bg-white px-4 text-zinc-400 dark:border-zinc-800 dark:text-zinc-600">
                 다음
               </span>
             )}

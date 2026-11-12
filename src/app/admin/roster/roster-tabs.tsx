@@ -23,7 +23,7 @@ export function RosterTabs({ active, counts }: { active: RosterFilter; counts: R
             aria-current={isActive ? "page" : undefined}
             className={`flex h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
               isActive
-                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                ? "bg-primary text-white dark:bg-zinc-100 dark:text-zinc-900"
                 : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }`}
           >

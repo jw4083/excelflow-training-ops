@@ -44,7 +44,7 @@ export function ExcludeButton({ traineeId, name }: { traineeId: string; name: st
           name="next"
           value="fill"
           disabled={pending}
-          className="h-11 rounded-lg bg-zinc-900 px-4 text-base font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="h-11 rounded-lg bg-primary px-4 text-base font-semibold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
         >
           {pending ? "처리 중…" : "제외하고 바로 충원"}
         </button>

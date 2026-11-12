@@ -1,7 +1,8 @@
 "use client";
 // 교육생 회신 양식 (PLAN 작업 18, PRD M2-3·M2-6·M2-11): 참석/불참, 불참 사유, 노트북, 룸메이트(직접 입력). 휴대폰 기준(입력 칸·버튼 48px, 글자 16px).
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { submitReplyAction, type ReplyFormState } from "@/app/actions/reply";
+import { Mascot } from "@/components/Mascot";
 import { ABSENT_DETAIL_MAX, ABSENT_DETAIL_MIN, ROOMMATE_FIELD_MAX } from "@/domain/replyRules";
 
 export interface ReplyDefaults {
@@ -17,7 +18,7 @@ export interface ReplyDefaults {
 const inputClass =
   "h-12 w-full rounded-lg border border-zinc-300 bg-white px-3 text-base dark:border-zinc-700 dark:bg-zinc-900";
 const choiceClass =
-  "flex h-12 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-300 text-base font-medium has-[:checked]:border-zinc-900 has-[:checked]:bg-zinc-900 has-[:checked]:text-white dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900";
+  "flex h-12 flex-1 cursor-pointer items-center justify-center gap-2 rounded-lg border border-zinc-300 text-base font-medium has-[:checked]:border-primary has-[:checked]:bg-primary has-[:checked]:text-white dark:border-zinc-700 dark:has-[:checked]:border-zinc-100 dark:has-[:checked]:bg-zinc-100 dark:has-[:checked]:text-zinc-900";
 
 type Choice = "yes" | "no" | "";
 const toChoice = (v: boolean | undefined): Choice => (v === undefined ? "" : v ? "yes" : "no");
@@ -44,6 +45,7 @@ export function ReplyForm({
   submitLabel?: string;
 }) {
   const [state, action, pending] = useActionState<ReplyFormState, FormData>(onSubmitAction, {});
+  const celebrate = onSubmitAction === submitReplyAction; // 교육생 본인 제출일 때만 마스코트를 보여 준다
   const [attend, setAttend] = useState<Choice>(toChoice(defaults.attend));
   const [absentType, setAbsentType] = useState(defaults.absentType ?? "");
   const [detail, setDetail] = useState(defaults.absentDetail ?? "");
@@ -53,9 +55,29 @@ export function ReplyForm({
   const errors = state.errors ?? {};
 
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
-      {defaults.submittedAt && (
-        <p className="text-base text-zinc-600 dark:text-zinc-400">마지막으로 제출한 시각: {defaults.submittedAt}</p>
+    // action 속성 대신 onSubmit으로 보낸다: action 속성을 쓰면 제출이 끝날 때 React가 양식을 비워(라디오 선택이 풀림) 다시 제출할 때 값이 빠진다
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const data = new FormData(e.currentTarget);
+        startTransition(() => action(data));
+      }}
+      className="flex flex-col gap-4"
+      noValidate
+    >
+      {/* 회신 완료(교육생 본인 화면): 캠코 마스코트 보따와 함께 접수 사실을 알려 준다. 담당자 대신 입력 화면에서는 글자만 보인다 */}
+      {celebrate && (state.ok || defaults.submittedAt) ? (
+        <div role="status" className="flex items-center gap-3 rounded-card bg-primary-soft p-4">
+          <Mascot name="보따" size={72} />
+          <div className="min-w-0">
+            <p className="text-base font-bold break-keep">{state.ok ? "회신이 저장되었습니다" : "회신이 접수되었습니다"}</p>
+            <p className="mt-1 text-base text-zinc-700 break-keep">
+              {state.ok ? state.message : `마지막으로 제출한 시각: ${defaults.submittedAt}`}
+            </p>
+          </div>
+        </div>
+      ) : (
+        defaults.submittedAt && <p className="text-base text-zinc-600">마지막으로 제출한 시각: {defaults.submittedAt}</p>
       )}
 
       <fieldset className="flex flex-col gap-2">
@@ -150,7 +172,7 @@ export function ReplyForm({
         </>
       )}
 
-      {state.message && (
+      {state.message && !(celebrate && state.ok) && (
         <p
           role={state.ok ? "status" : "alert"}
           className={`rounded-lg border p-3 text-base ${
@@ -166,7 +188,7 @@ export function ReplyForm({
       <button
         type="submit"
         disabled={pending}
-        className="h-12 w-full rounded-lg bg-zinc-900 text-base font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+        className="h-12 w-full rounded-lg bg-primary text-base font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
       >
         {pending ? "저장 중…" : (submitLabel ?? (defaults.submittedAt ? "회신 수정하기" : "회신 제출하기"))}
       </button>

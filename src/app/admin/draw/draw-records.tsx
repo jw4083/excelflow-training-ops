@@ -30,7 +30,7 @@ export function SelectionRecords({ selections }: { selections: SelectionRecord[]
     return <p className="text-base text-zinc-600 dark:text-zinc-400">아직 1차 선별 기록이 없습니다.</p>;
   }
   return (
-    <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+    <ul className="divide-y divide-zinc-200 rounded-2xl border border-zinc-200 bg-white dark:divide-zinc-800 dark:border-zinc-800">
       {[...selections].reverse().map((s) => (
         <li key={s.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-base">
           <span className="tabular-nums">{formatKst(s.at)}</span>
@@ -63,7 +63,7 @@ export function DrawRecords({ draws, trainees }: { draws: DrawRecord[]; trainees
         const isCurrent = d.id === current;
         const number = draws.length - index; // 몇 번째 추첨인지 (처음이 1번)
         return (
-          <li key={d.id} className="rounded-lg border border-zinc-200 dark:border-zinc-800">
+          <li key={d.id} className="rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800">
             <details>
               <summary className="flex cursor-pointer flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 text-base">
                 <span className="font-semibold">{number}번째 추첨</span>

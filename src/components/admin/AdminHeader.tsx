@@ -11,12 +11,12 @@ async function CourseName() {
 
 export function AdminHeader() {
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800">
+    <header className="border-b border-zinc-200 bg-white">
       {/* 복사 안내가 버튼 아래에 나타나도 두 버튼이 위쪽에 나란히 있도록 items-start로 맞춘다 */}
       <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
           {/* break-keep: 휴대폰처럼 좁을 때 단어 중간("통합/관리")이 아니라 띄어쓰기에서만 줄을 바꾼다 */}
-          <p className="text-base font-bold tracking-tight break-keep sm:text-lg">교육 운영 통합관리</p>
+          <p className="flex items-center gap-2 text-base font-bold tracking-tight break-keep sm:text-lg"><span aria-hidden className="h-3 w-3 rounded-full bg-primary" />교육 운영 통합관리</p>
           <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">
             <Suspense fallback="…">
               <CourseName />

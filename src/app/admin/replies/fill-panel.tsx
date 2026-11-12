@@ -37,7 +37,7 @@ export function FillPanel({
   const [picked, setPicked] = useState("");
 
   return (
-    <li id={`vacancy-${target.id}`} className="flex flex-col gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950">
+    <li id={`vacancy-${target.id}`} className="flex flex-col gap-3 rounded-lg border border-peach-200 bg-peach-100 p-4 dark:border-amber-700 dark:bg-amber-950">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-base">
           <strong className="text-lg">{target.name}</strong> · {target.dept} · {target.empNo}{" "}
@@ -47,7 +47,7 @@ export function FillPanel({
           type="button"
           onClick={() => setOpen((v) => !v)}
           aria-expanded={open}
-          className="h-11 rounded-lg bg-amber-900 px-4 text-base font-semibold text-white hover:bg-amber-800 dark:bg-amber-200 dark:text-amber-950"
+          className="h-11 rounded-lg bg-primary px-4 text-base font-semibold text-white hover:bg-primary-hover dark:bg-amber-200 dark:text-amber-950"
         >
           {open ? "닫기" : reasonLabel === "불참" ? "제외하고 충원" : "충원"}
         </button>
@@ -122,7 +122,7 @@ export function FillPanel({
               <button
                 type="submit"
                 disabled={pending || (candidates.mode === "pool" && !picked)}
-                className="h-12 rounded-lg bg-zinc-900 px-6 text-base font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+                className="h-12 rounded-lg bg-primary px-6 text-base font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
               >
                 {pending ? "처리 중…" : over ? "정원 초과 확정" : "확정"}
               </button>
