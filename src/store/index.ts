@@ -16,6 +16,7 @@ import type {
   Trainee,
 } from "@/domain/types";
 import { FileStore } from "./fileStore";
+import { PgStore } from "./pgStore";
 
 /** 한 번에 저장할 변경 묶음. 묶음 안의 변경은 전부 저장되거나 전부 저장되지 않는다(중간까지만 저장되는 일이 없다). */
 export interface StoreChanges {
@@ -61,11 +62,14 @@ const DEFAULT_DATA_FILE = process.env.DATA_FILE || path.join(process.cwd(), "dat
 const globalForStore = globalThis as unknown as { __educationStore?: Store };
 
 /**
- * 앱 전체에서 쓰는 저장소를 돌려준다.
- * ⚠ Part 5 배포 전에 여기만 데이터베이스 구현으로 바꾸면 된다. (Vercel에서는 파일 저장이 유지되지 않는다)
+ * 앱 전체에서 쓰는 저장소를 돌려준다. 저장소를 바꾸는 곳은 여기 한 곳이다.
+ * - DATABASE_URL이 있고 DATA_FILE이 없으면: Supabase(Postgres) 저장소 (배포용, 서버가 여러 대여도 안전)
+ * - 그 밖에는: 파일 저장소 (내 컴퓨터 개발·확인용. 확인용 서버 `npm run dev:test`는 DATA_FILE을 정해서 항상 파일을 쓴다)
  */
 export function getStore(): Store {
-  globalForStore.__educationStore ??= new FileStore(DEFAULT_DATA_FILE);
+  const url = process.env.DATABASE_URL;
+  globalForStore.__educationStore ??=
+    url && !process.env.DATA_FILE ? new PgStore(url) : new FileStore(DEFAULT_DATA_FILE);
   return globalForStore.__educationStore;
 }
 
