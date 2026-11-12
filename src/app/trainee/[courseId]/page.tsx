@@ -16,6 +16,8 @@ import { formatKst, formatPeriodKo } from "@/lib/datetime";
 import { TRAINEE_PATH } from "@/lib/paths";
 import { findMyEnrollment } from "@/lib/traineeCourse";
 import { getCatalog } from "@/store";
+import { loadMyGuides } from "@/lib/guides";
+import { GuidesSection } from "../guides-section";
 import { ReplyForm } from "../reply-form";
 import { ResourceLinks } from "../resource-links";
 import { card, TONE } from "../tone";
@@ -59,6 +61,8 @@ async function CourseView({ params }: { params: Params }) {
   const mode = selfReplyMode(me, course, reply, nowIso);
   const cancelDeadline = cancelDeadlineFor(course, nowIso);
   const showCancelDeadline = cancelDeadline && (me.status === "선정" || me.absentOrigin === "참석후취소");
+  // 최종 안내: "선정 + 참석 회신"일 때만 목록이 온다 (아니면 빈 목록 — 안내가 있다는 사실도 보이지 않는다)
+  const guides = await loadMyGuides(store, me.id);
   const updated = lastUpdatedText(course);
   const tone = TONE[msg.tone];
 
@@ -153,6 +157,8 @@ async function CourseView({ params }: { params: Params }) {
           </div>
         </div>
       )}
+
+      <GuidesSection courseId={courseId} guides={guides} nowIso={nowIso} />
 
       {/* 링크 영역의 빈 자리 (PRD M2-12): 카톡방·퀴즈·설문 링크는 이번에 만들지 않으므로 지금은 아무것도 넘기지 않아 보이지 않는다 */}
       <ResourceLinks />

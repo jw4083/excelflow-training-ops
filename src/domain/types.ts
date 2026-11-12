@@ -176,6 +176,38 @@ export interface ReplyNotice {
   readAt?: string; // 담당자가 확인한 일시. 없으면 읽지 않음
 }
 
+// ───────────────────────── 최종 선정자 전용 안내 ─────────────────────────
+
+/**
+ * 최종 안내 한 건 (카톡방 입장, Claude Pro 구독, 노트북 준비 등). 로그인한 교육생이 앱에서 확인하는 게시 기능이다 — 카톡·문자·메일은 보내지 않는다.
+ * "선정 상태 + 참석 회신"인 교육생만 공개된 안내를 볼 수 있다 (domain/guides.ts canViewGuides).
+ * 지우지 않고 비공개로만 바꾼다 (교육생의 확인·준비 기록과 어긋나지 않게).
+ */
+export interface Guide {
+  id: string;
+  title: string;
+  body: string; // 줄바꿈 유지, 글자만 (HTML 아님)
+  linkUrl?: string; // https:// 주소만
+  linkLabel?: string; // 링크 버튼에 쓸 글
+  dueAt?: string; // 준비 기한 (ISO). 준비가 필요한 안내만
+  needsPrep: boolean; // 준비가 필요한 안내인가 (교육생이 "준비 완료"를 따로 체크)
+  published: boolean; // 공개 여부
+  revision: number; // 공개 후 내용이 바뀔 때마다 1씩 올라간다 (처음 1). 교육생이 확인한 번호가 이보다 낮으면 "변경된 안내"
+  order: number; // 목록 순서
+  createdAt: string;
+  updatedAt: string; // 내용을 마지막으로 바꾼 일시
+  publishedAt?: string; // 처음 공개한 일시
+}
+
+/** 교육생 한 명의 안내 한 건에 대한 확인·준비 기록 */
+export interface GuideProgress {
+  guideId: string;
+  traineeId: string;
+  confirmedAt?: string; // "확인 완료" 일시
+  confirmedRevision?: number; // 확인했을 때의 안내 번호
+  preparedAt?: string; // "준비 완료" 일시 (내용이 바뀌어도 유지된다)
+}
+
 // ───────────────────────── 저장되는 전체 모양 ─────────────────────────
 
 /**
@@ -192,4 +224,6 @@ export interface DbData {
   replies: Reply[];
   history: History[];
   notices?: ReplyNotice[]; // 회신 알림. 예전 데이터에는 없다
+  guides?: Guide[]; // 최종 안내. 예전 데이터에는 없다
+  guideProgress?: GuideProgress[]; // 교육생별 확인·준비 기록
 }

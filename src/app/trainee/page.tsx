@@ -8,6 +8,7 @@ import { Suspense } from "react";
 import { logoutTraineeAction } from "@/app/actions/trainee";
 import { Mascot, MascotCredit } from "@/components/Mascot";
 import { removalOf } from "@/domain/roster";
+import { loadMyGuides } from "@/lib/guides";
 import { describeMyStatus, hasReplySection, replyDeadlineFor } from "@/domain/traineeView";
 import { getTraineeEmpNo } from "@/lib/auth";
 import { formatPeriodKo } from "@/lib/datetime";
@@ -39,6 +40,17 @@ async function TraineeGate() {
       const nowIso = new Date().toISOString();
       // 상태 "제외"의 경위(선정 취소 / 불참 후 충원)를 상세 화면과 똑같이 정한다: 저장된 값이 없는 예전 데이터만 본인의 불참 회신 흔적을 확인한다
       const catalog = getCatalog();
+      // 확인할 최종 안내 건수 (선정 + 참석 회신인 과정만 서버가 안내를 넘긴다)
+      const todoGuides = new Map(
+        await Promise.all(
+          mine.map(async ({ courseId, trainee }) => {
+            if (trainee.status !== "선정") return [courseId, 0] as const;
+            const store = await catalog.openCourse(courseId);
+            const list = store ? await loadMyGuides(store, trainee.id) : [];
+            return [courseId, list.filter((g) => !g.state.confirmed || (g.needsPrep && !g.state.prepared)).length] as const;
+          }),
+        ),
+      );
       const removals = new Map(
         await Promise.all(
           mine.map(async ({ courseId, trainee }) => {
@@ -79,6 +91,9 @@ async function TraineeGate() {
                       <p className="mt-2 text-base">
                         회신 기한: {deadline.text} <strong className="font-bold text-primary">({deadline.remaining})</strong>
                       </p>
+                    )}
+                    {(todoGuides.get(courseId) ?? 0) > 0 && (
+                      <p className="mt-2 text-base font-semibold text-amber-900">확인할 최종 안내 {todoGuides.get(courseId)}건</p>
                     )}
                     <p className="mt-3 text-base font-semibold text-primary">열어서 확인·회신하기 →</p>
                   </Link>

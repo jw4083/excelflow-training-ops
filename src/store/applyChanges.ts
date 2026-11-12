@@ -34,6 +34,7 @@ export function applyChanges(current: DbData, changes: StoreChanges): DbData {
     data.replies = [];
     data.history = [];
     data.notices = [];
+    data.guideProgress = []; // 교육생이 없어지므로 확인·준비 기록도 지운다 (안내 자체는 과정 내용이라 남긴다)
     if (data.course) delete data.course.capacity;
   }
 
@@ -54,6 +55,25 @@ export function applyChanges(current: DbData, changes: StoreChanges): DbData {
   for (const t of data.trainees) {
     if (seen.has(t.empNo)) throw new StoreError(`이미 등록된 사번입니다: "${t.empNo}"`);
     seen.add(t.empNo);
+  }
+
+  // 최종 안내: 있으면 수정, 없으면 추가 (지우는 방법은 없다 — 비공개로만 바꾼다)
+  for (const incoming of changes.upsertGuides ?? []) {
+    data.guides ??= [];
+    const copy = structuredClone(incoming);
+    const index = data.guides.findIndex((g) => g.id === copy.id);
+    if (index >= 0) data.guides[index] = copy;
+    else data.guides.push(copy);
+  }
+  // 확인·준비 기록: 안내와 교육생이 모두 이 과정에 있어야 한다. 같은 (안내, 교육생)이면 덮어쓴다
+  for (const incoming of changes.upsertGuideProgress ?? []) {
+    if (!data.guides?.some((g) => g.id === incoming.guideId)) throw new StoreError(`확인·준비 대상 안내가 없습니다: ${incoming.guideId}`);
+    if (!data.trainees.some((t) => t.id === incoming.traineeId)) throw new StoreError(`확인·준비 대상 교육생이 없습니다: ${incoming.traineeId}`);
+    data.guideProgress ??= [];
+    const copy = structuredClone(incoming);
+    const index = data.guideProgress.findIndex((p) => p.guideId === copy.guideId && p.traineeId === copy.traineeId);
+    if (index >= 0) data.guideProgress[index] = copy;
+    else data.guideProgress.push(copy);
   }
 
   // 회신: 교육생당 최신 1건

@@ -10,6 +10,7 @@ const ITEMS = [
   { path: "roster", label: "명단" },
   { path: "draw", label: "추첨" },
   { path: "replies", label: "회신 현황", hasBadge: true },
+  { path: "guides", label: "최종 안내" },
   { path: "history", label: "변경 이력" },
 ] as const;
 
