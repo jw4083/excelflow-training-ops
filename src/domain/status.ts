@@ -16,6 +16,8 @@ export const ACTIONS = [
   "충원자리처리", // 충원 확정 때 비는 자리 처리: 불참 → 제외 (이미 제외면 그대로 제외)
   "충원선정", // 충원 확정 때 새로 선정: 대기 → 선정, (대기자가 없을 때만) 미선정 → 선정
   "수기추가", // 선정 이후 수기 추가: (새로 추가) → 선정
+  "미선정처리", // 담당자가 신청자를 직접 미선정으로: 신청 → 미선정 (추첨·충원 대상에서 빠진다)
+  "미선정복구", // 담당자가 직접 미선정 처리한 사람을 추첨 전에 되돌림: 미선정 → 신청
 ] as const;
 export type Action = (typeof ACTIONS)[number];
 
@@ -30,6 +32,8 @@ export const TRANSITION_TABLE: Record<Action, { from: (Status | null)[]; to: Sta
   충원자리처리: { from: ["불참", "제외"], to: ["제외"] },
   충원선정: { from: ["대기", "미선정"], to: ["선정"] },
   수기추가: { from: [null], to: ["선정"] },
+  미선정처리: { from: ["신청"], to: ["미선정"] },
+  미선정복구: { from: ["미선정"], to: ["신청"] },
 };
 
 /** 전환을 판단할 때 필요한 주변 상황 */
@@ -59,7 +63,7 @@ const fail = (reason: string): TransitionResult => ({ ok: false, reason });
  */
 export function checkTransition(
   action: Action,
-  trainee: Pick<Trainee, "status" | "selectedVia" | "replacedBy"> | null,
+  trainee: (Pick<Trainee, "status" | "selectedVia" | "replacedBy"> & Partial<Pick<Trainee, "rejectedBy">>) | null,
   to?: Status,
   context: TransitionContext = {},
 ): TransitionResult {
@@ -89,6 +93,8 @@ export function checkTransition(
     case "추첨":
       // 첫 추첨 대상은 "신청"뿐이고, 대기·미선정은 재추첨 때만 대상이 된다 (DESIGN 3.3)
       if (from !== "신청" && drawCount === 0) return fail("대기·미선정은 재추첨 때만 추첨 대상입니다.");
+      // 담당자가 직접 미선정 처리한 사람은 추첨·재추첨 대상이 아니다
+      if (trainee?.rejectedBy) return fail("담당자가 직접 미선정 처리한 사람은 추첨 대상이 아닙니다.");
       break;
 
     case "불참회신":
@@ -118,6 +124,12 @@ export function checkTransition(
       if (from === "미선정" && (context.waitlistCount ?? 0) > 0) {
         return fail("대기자가 남아 있으면 미선정자를 충원할 수 없습니다. 대기 순번 앞사람부터 충원하세요.");
       }
+      if (trainee?.rejectedBy) return fail("담당자가 직접 미선정 처리한 사람은 충원할 수 없습니다.");
+      break;
+
+    case "미선정복구":
+      if (!trainee?.rejectedBy) return fail("담당자가 직접 미선정 처리한 사람만 되돌릴 수 있습니다. 추첨 결과 미선정은 되돌리지 않습니다.");
+      if (drawCount > 0) return fail("2차 추첨이 끝난 뒤에는 미선정 처리를 되돌릴 수 없습니다.");
       break;
 
     default:

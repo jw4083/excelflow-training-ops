@@ -63,6 +63,14 @@ export interface Trainee {
   absentOrigin?: AbsentOrigin; // 불참하게 된 경위 (불참·제외 상태에서만). 예전 불참자에게는 없다("경위 미기록")
   cancelledAt?: string; // 참석 회신 후 취소한 시각 (absentOrigin이 "참석후취소"일 때)
   cancelSeenAt?: string; // 담당자가 이 취소를 "확인"한 시각. 없으면 담당자 화면에 "새 취소"로 표시
+  /** 담당자가 직접 "미선정" 처리했다(추첨 전 신청자). 값이 있으면 추첨·재추첨·충원 후보에서 빠진다. 추첨 결과 미선정자에게는 없다 */
+  rejectedBy?: "담당자";
+  rejectReason?: string; // 담당자 미선정 사유 (rejectedBy가 있을 때)
+  rejectedAt?: string; // 담당자가 미선정 처리한 일시
+  /** "우선 선정"(1차 선별) 사유. 담당자만 본다 — 교육생 화면에는 공개하지 않는다. 이 필드가 생기기 전의 선별 데이터에는 없고, 임의로 채우지 않는다("미기록"으로 표시) */
+  selectReason?: string;
+  /** 상태가 "제외"가 된 경위: 선정됐다가 담당자가 취소("선정취소") / 불참했고 그 자리가 충원됨("불참"). 이 필드가 생기기 전 데이터에는 없어서 변경 이력으로 계산한다 (domain/roster.ts removalIndex) */
+  excludedFrom?: "선정취소" | "불참";
   /** @deprecated 로그인 실패 기록은 과정이 아닌 사번 기준(LoginRecord)으로 옮겼다. 여러 과정에 등록된 직원이 과정마다 5번씩 시도하는 것을 막기 위해서다. 예전 데이터 호환용으로만 남긴다. */
   loginFails?: number;
   /** @deprecated 위와 같음 */
@@ -79,6 +87,7 @@ export interface SelectionRecord {
   at: string; // 일시
   kind: "선별" | "선별취소";
   traineeIds: string[]; // 선정 처리(또는 취소)된 교육생 id
+  reason?: string; // 우선 선정 공통 사유 (선별 기록만. 예전 기록에는 없다)
 }
 
 /**
@@ -116,7 +125,7 @@ export interface Reply {
 
 // ───────────────────────── 변경 이력 ─────────────────────────
 
-/** 변경 이력의 종류 11가지 ("참석취소" = 참석으로 회신한 뒤 불참으로 바꿈) */
+/** 변경 이력의 종류 13가지 ("참석취소" = 참석으로 회신한 뒤 불참으로 바꿈) */
 export const HISTORY_KINDS = [
   "추첨",
   "선정",
@@ -129,6 +138,8 @@ export const HISTORY_KINDS = [
   "회신대리입력",
   "참석취소",
   "명단초기화", // 과정의 명단·회신·이력을 모두 비움. 초기화 뒤 이력에 남는 유일한 기록(몇 명을 지웠는지)
+  "미선정처리", // 담당자가 추첨 전에 신청자를 미선정으로 처리 (사유 필수)
+  "미선정복구", // 위 처리를 추첨 전에 "신청"으로 되돌림
 ] as const;
 export type HistoryKind = (typeof HISTORY_KINDS)[number];
 

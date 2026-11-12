@@ -15,8 +15,8 @@ const names: Record<string, string> = { a: "김테스트01(100001)", b: "이테�
 const nameOf = (id: string) => names[id];
 
 describe("작업 14: 종류 탭", () => {
-  it("탭은 '전체'와 이력 종류 11종이다", () => {
-    expect([...HISTORY_FILTERS]).toEqual(["전체", "추첨", "선정", "선별취소", "불참", "제외", "충원", "수기추가", "회신", "회신대리입력", "참석취소", "명단초기화"]);
+  it("탭은 '전체'와 이력 종류 13종이다", () => {
+    expect([...HISTORY_FILTERS]).toEqual(["전체", "추첨", "선정", "선별취소", "불참", "제외", "충원", "수기추가", "회신", "회신대리입력", "참석취소", "명단초기화", "미선정처리", "미선정복구"]);
   });
 
   it("종류마다 건수가 맞고, 전체는 모든 종류의 합이다", () => {
@@ -75,7 +75,7 @@ describe("작업 14: 변경 내용을 읽기 쉽게", () => {
   });
 
   it("충원 확정은 교육생 번호 대신 이름(사번)으로 보여 준다", () => {
-    expect(describeChange({ status: "제외", replacedBy: "a" }, nameOf)).toEqual(["상태: 제외", "충원 확정: 김테스트01(100001)로 충원"]);
+    expect(describeChange({ status: "제외", replacedBy: "a" }, nameOf)).toEqual(["상태: 선정 취소·충원 완료", "충원 확정: 김테스트01(100001)로 충원"]);
     expect(describeChange({ replacedFor: "b" }, nameOf)).toEqual(["충원으로 들어간 자리: 이테스트02(100002)"]);
     expect(describeChange({ replacedBy: "없는사람" }, nameOf)).toEqual(["충원 확정: (알 수 없음)로 충원"]);
   });

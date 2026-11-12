@@ -8,7 +8,7 @@ export async function VacancyBanner({ courseId }: { courseId: string }) {
   const { alert } = await getAdminSummary(courseId);
   if (alert.total === 0 && alert.newCancels === 0) return null;
 
-  const parts = [alert.absent > 0 && `불참 ${alert.absent}명`, alert.excluded > 0 && `직접 제외 ${alert.excluded}명`]
+  const parts = [alert.absent > 0 && `불참 ${alert.absent}명`, alert.excluded > 0 && `선정 취소 ${alert.excluded}명`]
     .filter(Boolean)
     .join(", ");
   const rest = alert.total - alert.names.length;

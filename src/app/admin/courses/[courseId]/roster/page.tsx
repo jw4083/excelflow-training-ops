@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { capacitySummary } from "@/domain/capacity";
-import { countByStatus, paginate, parseFilter, parsePage, visibleTrainees } from "@/domain/roster";
+import { countByStatus, paginate, parseFilter, parsePage, removalIndex, statusView, visibleTrainees } from "@/domain/roster";
 import { defaultFillDeadline, fillExceedsCapacity, openVacancies } from "@/domain/fill";
 import { courseBase, openAdminCourse } from "@/lib/adminCourse";
 import { isoToKstLocal } from "@/lib/datetime";
@@ -39,6 +39,9 @@ async function RosterContent({ params, searchParams }: { params: Params; searchP
   const counts = countByStatus(data.trainees);
   const page = paginate(visibleTrainees(data.trainees, filter), parsePage(query.page));
   const replies = new Map(data.replies.map((r) => [r.traineeId, r]));
+  // 이 쪽에 보이는 사람마다 "상태 + 처리 사유" (제외 경위는 저장된 값이 없는 예전 데이터면 변경 이력으로 계산한다)
+  const removals = removalIndex(data.history);
+  const views = new Map(page.items.map((t) => [t.id, statusView(t, removals, replies.get(t.id))]));
 
   return (
     <main className="flex w-full max-w-5xl flex-col gap-6 px-4 py-8">
@@ -64,14 +67,14 @@ async function RosterContent({ params, searchParams }: { params: Params; searchP
       </details>
 
       <ManualAdd
-        vacancies={openVacancies(data.trainees).map((v) => ({ id: v.id, label: `${v.name} (${v.status === "불참" ? "불참" : "직접 제외"})` }))}
+        vacancies={openVacancies(data.trainees).map((v) => ({ id: v.id, label: `${v.name} (${v.status === "불참" ? "불참" : "선정 취소"})` }))}
         defaultDeadline={isoToKstLocal(defaultFillDeadline(new Date().toISOString()))}
         exceeds={fillExceedsCapacity(data.course?.capacity, data.trainees)}
       />
 
       <RosterTabs active={filter} counts={counts} courseId={courseId} />
       {filter === "신청" && <SelectionToolbar empty={page.total === 0} />}
-      <RosterTable page={page} filter={filter} replies={replies} canCancelSelection={data.draws.length === 0} courseId={courseId} />
+      <RosterTable page={page} filter={filter} replies={replies} canCancelSelection={data.draws.length === 0} courseId={courseId} views={views} />
 
       <ResetPanel scope={resetScope(data)} exportHref={`${courseBase(courseId)}/export`} archived={Boolean(data.archivedAt)} />
     </main>

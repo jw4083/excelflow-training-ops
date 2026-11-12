@@ -39,7 +39,7 @@ const draw: DrawRecord = { id: "d1", executedAt: T0, seats: 5, waitSeats: 0, sel
 describe("작업 12: 1차 선별", () => {
   it("체크한 신청자는 바로 '선정'이 되고, 체크하지 않은 사람은 '신청' 그대로다", async () => {
     await seed([trainee("a", "100001"), trainee("b", "100002"), trainee("c", "100003")]);
-    const r = await selectApplicants(store, ["a", "c"], opts());
+    const r = await selectApplicants(store, ["a", "c"], "테스트 사유", opts());
     expect(r).toMatchObject({ ok: true, count: 2 });
 
     const { trainees } = await store.readAll();
@@ -51,7 +51,7 @@ describe("작업 12: 1차 선별", () => {
 
   it("선별 기록(일시·인원)이 남고, 교육생마다 변경 이력(변경 전·후)도 남는다 — 모두 한 묶음", async () => {
     await seed([trainee("a", "100001"), trainee("b", "100002")]);
-    await selectApplicants(store, ["a", "b"], opts());
+    await selectApplicants(store, ["a", "b"], "테스트 사유", opts());
     const { selections, history } = await store.readAll();
 
     expect(selections).toHaveLength(1);
@@ -64,20 +64,20 @@ describe("작업 12: 1차 선별", () => {
 
   it("같은 사람을 두 번 체크해도 한 번만 처리한다", async () => {
     await seed([trainee("a", "100001")]);
-    const r = await selectApplicants(store, ["a", "a", "a"], opts());
+    const r = await selectApplicants(store, ["a", "a", "a"], "테스트 사유", opts());
     expect(r).toMatchObject({ ok: true, count: 1 });
     expect((await store.readAll()).history).toHaveLength(1);
   });
 
   it("아무도 체크하지 않으면 거부한다", async () => {
     await seed([trainee("a", "100001")]);
-    expect(await selectApplicants(store, [], opts())).toMatchObject({ ok: false, reason: "선정할 신청자를 먼저 체크해 주세요." });
-    expect(await selectApplicants(store, ["", ""], opts())).toMatchObject({ ok: false });
+    expect(await selectApplicants(store, [], "테스트 사유", opts())).toMatchObject({ ok: false, reason: "선정할 신청자를 먼저 체크해 주세요." });
+    expect(await selectApplicants(store, ["", ""], "테스트 사유", opts())).toMatchObject({ ok: false });
   });
 
   it("체크한 사람 중 한 명이라도 신청 상태가 아니면 전체를 취소하고 누구 때문인지 알려 준다", async () => {
     await seed([trainee("a", "100001"), trainee("b", "100002", "선정"), trainee("c", "100003")]);
-    const r = await selectApplicants(store, ["a", "b", "c"], opts());
+    const r = await selectApplicants(store, ["a", "b", "c"], "테스트 사유", opts());
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.reason).toContain("김테스트b(100002)");
@@ -93,7 +93,7 @@ describe("작업 12: 1차 선별", () => {
 
   it("없는 교육생이 섞여 있어도 전체를 취소한다", async () => {
     await seed([trainee("a", "100001")]);
-    expect((await selectApplicants(store, ["a", "없는사람"], opts())).ok).toBe(false);
+    expect((await selectApplicants(store, ["a", "없는사람"], "테스트 사유", opts())).ok).toBe(false);
     expect((await store.readAll()).trainees[0].status).toBe("신청");
   });
 
@@ -102,19 +102,19 @@ describe("작업 12: 1차 선별", () => {
       await seed([trainee("x" + status, "20" + String(n++).padStart(4, "0"), status)]);
     }
     const ids = (await store.readAll()).trainees.map((t) => t.id);
-    for (const id of ids) expect((await selectApplicants(store, [id], opts())).ok).toBe(false);
+    for (const id of ids) expect((await selectApplicants(store, [id], "테스트 사유", opts())).ok).toBe(false);
   });
 
   it(`한 번에 ${MAX_SELECTION_BATCH}명까지만 처리한다`, async () => {
     const ids = Array.from({ length: MAX_SELECTION_BATCH + 1 }, (_, i) => `t${i}`);
-    expect(await selectApplicants(store, ids, opts())).toMatchObject({ ok: false });
+    expect(await selectApplicants(store, ids, "테스트 사유", opts())).toMatchObject({ ok: false });
   });
 });
 
 describe("작업 12: 선별 취소", () => {
   it("2차 추첨 전에는 선별로 선정된 사람을 '신청'으로 되돌릴 수 있다 (선정 경로도 지워진다)", async () => {
     await seed([trainee("a", "100001"), trainee("b", "100002")]);
-    await selectApplicants(store, ["a", "b"], opts());
+    await selectApplicants(store, ["a", "b"], "테스트 사유", opts());
     const r = await cancelSelection(store, ["a"], opts());
     expect(r).toMatchObject({ ok: true, count: 1 });
 
@@ -127,9 +127,9 @@ describe("작업 12: 선별 취소", () => {
 
   it("취소도 지우지 않고 새 기록과 이력으로 남는다 (선별 기록은 쌓이기만 한다)", async () => {
     await seed([trainee("a", "100001")]);
-    await selectApplicants(store, ["a"], opts());
+    await selectApplicants(store, ["a"], "테스트 사유", opts());
     await cancelSelection(store, ["a"], opts());
-    await selectApplicants(store, ["a"], opts()); // 다시 선별해도 된다
+    await selectApplicants(store, ["a"], "테스트 사유", opts()); // 다시 선별해도 된다
 
     const { selections, history, trainees } = await store.readAll();
     expect(selections.map((s) => s.kind)).toEqual(["선별", "선별취소", "선별"]);
@@ -141,7 +141,7 @@ describe("작업 12: 선별 취소", () => {
 
   it("2차 추첨이 끝난 뒤에는 취소할 수 없다", async () => {
     await seed([trainee("a", "100001")]);
-    await selectApplicants(store, ["a"], opts());
+    await selectApplicants(store, ["a"], "테스트 사유", opts());
     await store.commit({ appendDraws: [draw] });
     const r = await cancelSelection(store, ["a"], opts());
     expect(r.ok).toBe(false);
@@ -164,7 +164,7 @@ describe("작업 12: 선별 취소", () => {
 
   it("취소할 사람이 한 명이라도 규칙에 어긋나면 전체가 취소되지 않는다", async () => {
     await seed([trainee("a", "100001"), trainee("b", "100002", "선정", { selectedVia: "추첨" })]);
-    await selectApplicants(store, ["a"], opts());
+    await selectApplicants(store, ["a"], "테스트 사유", opts());
     expect((await cancelSelection(store, ["a", "b"], opts())).ok).toBe(false);
     expect((await store.readAll()).trainees.find((t) => t.id === "a")?.status).toBe("선정"); // a도 그대로
   });

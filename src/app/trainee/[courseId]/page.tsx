@@ -8,6 +8,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { logoutTraineeAction } from "@/app/actions/trainee";
 import { Mascot, MascotCredit } from "@/components/Mascot";
+import { removalOf } from "@/domain/roster";
 import { selfReplyMode } from "@/domain/replyRules";
 import { cancelDeadlineFor, describeMyStatus, hasReplySection, lastUpdatedText, replyDeadlineFor } from "@/domain/traineeView";
 import { getTraineeEmpNo } from "@/lib/auth";
@@ -49,10 +50,11 @@ async function CourseView({ params }: { params: Params }) {
   const me = mine.trainee;
   const course = mine.course;
   await connection(); // 현재 시각을 쓰므로 요청 시점에 계산 (Cache Components 규칙)
-  const msg = describeMyStatus(me);
   const nowIso = new Date().toISOString();
   const deadline = replyDeadlineFor(me, course, nowIso);
   const reply = await store.getReply(me.id);
+  // 제외 상태의 경위(선정 취소 / 불참 후 충원): 저장된 값이 없는 예전 데이터는 불참 회신 흔적으로 정한다 (본인 정보만 쓴다)
+  const msg = describeMyStatus(me, removalOf(me, undefined, reply).origin);
   // 지금 할 수 있는 회신: 자유 회신(기한 전) / 불참 변경만(기한 후·취소 마감 전 참석자) / 닫힘(이유 안내). 서버 검사와 같은 함수다
   const mode = selfReplyMode(me, course, reply, nowIso);
   const cancelDeadline = cancelDeadlineFor(course, nowIso);

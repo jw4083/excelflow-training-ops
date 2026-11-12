@@ -131,7 +131,7 @@ describe("과정끼리 데이터가 섞이지 않는다", () => {
     await b.store.commit({ upsertTrainees: people("b") });
     const bBefore = JSON.stringify(await b.store.readAll());
 
-    expect((await selectApplicants(a.store, ["a0"], { now: NOW })).ok).toBe(true);
+    expect((await selectApplicants(a.store, ["a0"], "테스트 사유", { now: NOW })).ok).toBe(true);
     expect((await runDraw(a.store, { capacity: "4", waitSeats: "2" }, { now: NOW })).ok).toBe(true);
     const mid = await a.store.readAll();
     const absent = mid.trainees.find((t) => t.status === "선정" && t.id !== "a0")!;
@@ -215,7 +215,7 @@ describe("보관: 조회만 가능하고 교육생에게 보이지 않는다", (
     const reply = await submitReply(a.store, "a1", { attend: true, laptop: true }, { now: NOW });
     expect(reply).toMatchObject({ ok: false });
     expect((await runDraw(a.store, { capacity: "3", waitSeats: "0" }, { now: NOW })).ok).toBe(false);
-    expect((await selectApplicants(a.store, ["a1"], { now: NOW })).ok).toBe(false);
+    expect((await selectApplicants(a.store, ["a1"], "테스트 사유", { now: NOW })).ok).toBe(false);
 
     const data = await a.store.readAll();
     expect(data.trainees).toHaveLength(1); // 과거 명단과 이력은 그대로 조회된다

@@ -64,7 +64,7 @@ async function confirmFillUnlocked(store: Store, input: FillInput, options: Chan
   return result.ok ? { ok: true } : { ok: false, reason: result.reason };
 }
 
-/** 담당자가 선정자를 직접 "제외"한다 (사유 필수). 이후 충원이 필요한 자리로 알림에 잡힌다. */
+/** 담당자가 선정자의 선정을 취소한다 (내부 상태는 "제외") (사유 필수). 이후 충원이 필요한 자리로 알림에 잡힌다. */
 export async function excludeSelected(
   store: Store,
   traineeId: string,
@@ -72,7 +72,7 @@ export async function excludeSelected(
   options: ChangeOptions = {},
 ): Promise<FillResult> {
   const text = reason.trim();
-  if (!text) return { ok: false, reason: "제외 사유를 입력해 주세요." };
+  if (!text) return { ok: false, reason: "선정 취소 사유를 입력해 주세요." };
   const result = await changeStatus(store, { action: "직접제외", traineeId, reason: text }, {}, options);
   return result.ok ? { ok: true } : { ok: false, reason: result.reason };
 }

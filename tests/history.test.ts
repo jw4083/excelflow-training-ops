@@ -56,7 +56,7 @@ async function seed(trainees: Trainee[], deadline = COURSE_DEADLINE_OK) {
 describe("작업 6: 변경 이력 기록 함수", () => {
   it("상태를 바꾸면 이력이 자동으로 남는다 (일시·변경 전·변경 후)", async () => {
     await seed([trainee("t1", "100001")]);
-    const r = await changeStatus(store, { action: "선별", traineeId: "t1" }, {}, opts());
+    const r = await changeStatus(store, { action: "선별", traineeId: "t1", reason: "사유" }, {}, opts());
     expect(r.ok).toBe(true);
 
     const all = await store.readAll();
@@ -73,7 +73,7 @@ describe("작업 6: 변경 이력 기록 함수", () => {
 
   it("규칙에 어긋나면 상태도 이력도 저장되지 않고, 이유를 돌려준다", async () => {
     await seed([trainee("t1", "100001", { status: "제외" })]);
-    const r = await changeStatus(store, { action: "선별", traineeId: "t1" }, {}, opts());
+    const r = await changeStatus(store, { action: "선별", traineeId: "t1", reason: "사유" }, {}, opts());
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toContain("선별");
     const all = await store.readAll();
@@ -82,7 +82,7 @@ describe("작업 6: 변경 이력 기록 함수", () => {
   });
 
   it("없는 교육생은 거부한다", async () => {
-    const r = await changeStatus(store, { action: "선별", traineeId: "없음" }, {}, opts());
+    const r = await changeStatus(store, { action: "선별", traineeId: "없음", reason: "사유" }, {}, opts());
     expect(r).toMatchObject({ ok: false, reason: "교육생을 찾을 수 없습니다." });
   });
 
@@ -221,7 +221,7 @@ describe("작업 6: 변경 이력 기록 함수", () => {
     const draw: DrawRecord = { id: "d1", executedAt: NOW, seats: 5, waitSeats: 0, selected: [], waitlist: [], rejected: [] };
     const bad = await changeStatus(
       store,
-      { action: "선별", traineeId: "t1" },
+      { action: "선별", traineeId: "t1", reason: "사유" },
       { appendDraws: [draw], course: { ...course(COURSE_DEADLINE_OK), capacity: 5 } },
       opts(),
     );
@@ -233,7 +233,7 @@ describe("작업 6: 변경 이력 기록 함수", () => {
     await seed([trainee("t2", "100002")]);
     const good = await changeStatus(
       store,
-      { action: "선별", traineeId: "t2" },
+      { action: "선별", traineeId: "t2", reason: "사유" },
       { appendDraws: [draw], course: { ...course(COURSE_DEADLINE_OK), capacity: 5 } },
       opts(),
     );
@@ -283,7 +283,7 @@ describe("작업 6: 변경 이력 기록 함수", () => {
 
   it("이력은 쌓이기만 한다: 여러 번 바꿔도 이전 이력이 그대로 남고 순서대로 늘어난다", async () => {
     await seed([trainee("t1", "100001")]);
-    await changeStatus(store, { action: "선별", traineeId: "t1" }, {}, opts());
+    await changeStatus(store, { action: "선별", traineeId: "t1", reason: "사유" }, {}, opts());
     await changeStatus(store, { action: "불참회신", traineeId: "t1" }, {}, opts());
     await changeStatus(store, { action: "참석재회신", traineeId: "t1" }, {}, opts());
     const { history } = await store.readAll();
@@ -302,7 +302,7 @@ describe("작업 6: 변경 이력 기록 함수", () => {
   it("일시를 따로 넘기지 않으면 지금 시각이 기록된다", async () => {
     await seed([trainee("t1", "100001")]);
     const before = Date.now();
-    await changeStatus(store, { action: "선별", traineeId: "t1" });
+    await changeStatus(store, { action: "선별", traineeId: "t1", reason: "사유" });
     const at = Date.parse((await store.readAll()).history[0].at);
     expect(at).toBeGreaterThanOrEqual(before - 1000);
     expect(at).toBeLessThanOrEqual(Date.now() + 1000);

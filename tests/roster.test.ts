@@ -45,13 +45,13 @@ describe("작업 11: 정원·현재 선정·빈자리 (DESIGN 4.2-1)", () => {
 });
 
 describe("작업 11: 상태 탭", () => {
-  it("탭은 '전체'와 상태 6종이다", () => {
-    expect([...ROSTER_FILTERS]).toEqual(["전체", "신청", "선정", "대기", "미선정", "불참", "제외"]);
+  it("탭은 '전체'와 상태 5종 + '선정 취소·충원 완료'이다", () => {
+    expect([...ROSTER_FILTERS]).toEqual(["전체", "신청", "선정", "대기", "미선정", "불참", "선정 취소·충원 완료"]);
   });
 
   it("탭마다 인원 수가 맞고, 전체는 모든 상태의 합이다", () => {
     const counts = countByStatus([...many("신청", 5), ...many("선정", 3), ...many("대기", 2), ...many("불참", 1)]);
-    expect(counts).toEqual({ 전체: 11, 신청: 5, 선정: 3, 대기: 2, 미선정: 0, 불참: 1, 제외: 0 });
+    expect(counts).toEqual({ 전체: 11, 신청: 5, 선정: 3, 대기: 2, 미선정: 0, 불참: 1, "선정 취소·충원 완료": 0 });
   });
 
   it("주소의 값이 틀리면 '전체'로 본다", () => {
@@ -64,6 +64,7 @@ describe("작업 11: 상태 탭", () => {
     const list = [t("신청", "100003"), t("선정", "100001"), t("선정", "100002"), t("제외", "100004")];
     expect(visibleTrainees(list, "선정").map((x) => x.empNo)).toEqual(["100001", "100002"]);
     expect(visibleTrainees(list, "미선정")).toEqual([]);
+    expect(visibleTrainees(list, "선정 취소·충원 완료").map((x) => x.empNo)).toEqual(["100004"]); // 저장된 상태 "제외"는 미선정과 따로 보인다
     expect(visibleTrainees(list, "전체")).toHaveLength(4);
   });
 

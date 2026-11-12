@@ -78,6 +78,7 @@ const TRACKED = [
   "absentOrigin",
   "cancelledAt",
   "cancelSeenAt",
+  "rejectedBy",
 ] as const;
 
 // 선정이 되는 동작의 기본 "선정 경로"
@@ -108,6 +109,10 @@ function kindFor(action: Action, byAdmin: boolean): HistoryKind {
       return "충원";
     case "수기추가":
       return "수기추가";
+    case "미선정처리":
+      return "미선정처리";
+    case "미선정복구":
+      return "미선정복구";
   }
 }
 
@@ -144,7 +149,9 @@ function buildOne(data: DbData, input: StatusChangeInput, now: string, newId: ()
   const existing = isNew ? null : (data.trainees.find((t) => t.id === input.traineeId) ?? null);
   if (!isNew && !existing) return fail("교육생을 찾을 수 없습니다.");
 
-  if (action === "직접제외" && !input.reason?.trim()) return fail("제외 사유를 입력해야 합니다.");
+  if (action === "직접제외" && !input.reason?.trim()) return fail("선정 취소 사유를 입력해야 합니다.");
+  if (action === "선별" && !input.reason?.trim()) return fail("선정 사유를 입력해야 합니다.");
+  if (action === "미선정처리" && !input.reason?.trim()) return fail("미선정 사유를 입력해야 합니다.");
 
   // 수기 추가는 사번·이름·부서·사유가 모두 있어야 하고, 사번은 6자리이며 이미 명단에 없어야 한다 (PRD M1-6, M1-9)
   const manual = input.newTrainee;
@@ -213,9 +220,29 @@ function buildOne(data: DbData, input: StatusChangeInput, now: string, newId: ()
       delete next.cancelledAt;
       delete next.cancelSeenAt;
     }
+    // "제외"가 된 경위: 선정자를 직접 제외하면 "선정취소", 불참자의 자리를 충원 처리하면 "불참". 이미 제외인 자리의 충원 확정은 처음 경위를 그대로 둔다
+    if (result.to === "제외") {
+      if (action === "직접제외") next.excludedFrom = "선정취소";
+      else if (existing.status === "불참") next.excludedFrom = "불참";
+    } else {
+      delete next.excludedFrom;
+    }
+    // 담당자 미선정 표시: 미선정 처리 때 붙이고(사유·일시 포함), 복구·그 밖의 상태 변경에서는 지운다
+    if (action === "미선정처리") {
+      next.rejectedBy = "담당자";
+      next.rejectReason = input.reason?.trim();
+      next.rejectedAt = now;
+    } else {
+      delete next.rejectedBy;
+      delete next.rejectReason;
+      delete next.rejectedAt;
+    }
     // 선정 경로: 선정이 되는 동작이면 새로 기록하고, 선별 취소·추첨에서 선정이 아니게 되면 지운다.
     // 불참·제외·참석 재회신은 원래 경로를 그대로 둔다 (불참 후 다시 선정되어도 원래 경로 유지)
     const via = VIA_BY_ACTION[action];
+    // 우선 선정(1차 선별) 사유는 선별 때 저장하고, 선별을 취소하면 지운다 (사유는 변경 이력에 그대로 남는다)
+    if (action === "선별") next.selectReason = input.reason?.trim();
+    else if (action === "선별취소") delete next.selectReason;
     if (via && result.to === "선정") next.selectedVia = via;
     else if (action === "선별취소" || (action === "추첨" && result.to !== "선정")) delete next.selectedVia;
   } else {

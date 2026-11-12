@@ -3,9 +3,12 @@
 import { formatKst } from "@/lib/datetime";
 import { HISTORY_KINDS, type History, type HistoryActor, type HistoryKind } from "./types";
 
-/** 종류 탭: "전체" + 이력 종류 10종 */
+/** 종류 탭: "전체" + 이력 종류 13종 */
 export const HISTORY_FILTERS = ["전체", ...HISTORY_KINDS] as const;
 export type HistoryFilter = (typeof HISTORY_FILTERS)[number];
+
+/** 화면에 보이는 이력 종류 이름. 저장된 종류 "제외"(선정 취소와 불참자 자리의 충원 처리)는 "제외"라는 말 대신 실제 뜻으로 보여 준다 */
+export const kindLabel = (kind: HistoryKind): string => (kind === "제외" ? "선정 취소·충원 완료" : kind);
 
 /** 주소의 ?kind= 값을 탭으로 바꾼다. 없거나 엉뚱한 값이면 "전체" */
 export function parseKindFilter(value: string | string[] | undefined): HistoryFilter {
@@ -42,7 +45,8 @@ export type NameOf = (traineeId: string) => string | undefined;
 
 // 값을 사람이 읽는 말로 보여 줄 항목들 (키 → [화면에 보일 이름, 값 바꾸는 방법])
 const FIELDS: Record<string, [label: string, show: (value: unknown, nameOf?: NameOf) => string] | "hide"> = {
-  status: ["상태", (v) => String(v)],
+  status: ["상태", (v) => (v === "제외" ? "선정 취소·충원 완료" : String(v))],
+  rejectedBy: ["미선정 구분", (v) => `${v} 처리 (추첨·충원 대상 아님)`],
   waitNo: ["대기 순번", (v) => `${v}번`],
   selectedVia: ["선정 경로", (v) => String(v)],
   replacedBy: ["충원 확정", (v, nameOf) => `${nameOf?.(String(v)) ?? "(알 수 없음)"}로 충원`],

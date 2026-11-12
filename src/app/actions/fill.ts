@@ -37,7 +37,7 @@ export async function confirmFillAction(_prev: FillState | undefined, formData: 
   redirect(`${courseBase(text(formData, "courseId"))}/replies?filled=${encodeURIComponent(candidateId)}`);
 }
 
-/** 선정자 직접 제외. next=fill 이면 제외한 자리를 바로 충원하는 창으로 이어진다 */
+/** 선정자의 선정 취소. next=fill 이면 그 자리를 바로 충원하는 창으로 이어진다 */
 export async function excludeAction(_prev: FillState | undefined, formData: FormData): Promise<FillState> {
   const store = await openAdminCourseFromForm(formData);
   if (!store) return { message: COURSE_NOT_FOUND };
@@ -47,5 +47,5 @@ export async function excludeAction(_prev: FillState | undefined, formData: Form
 
   revalidatePath("/admin", "layout");
   if (text(formData, "next") === "fill") redirect(`${courseBase(text(formData, "courseId"))}/replies?open=${encodeURIComponent(traineeId)}`);
-  return { message: "제외했습니다. 충원이 필요한 자리로 알림에 표시됩니다." };
+  return { message: "선정을 취소했습니다. 충원이 필요한 자리로 알림에 표시됩니다." };
 }

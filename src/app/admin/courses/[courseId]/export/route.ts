@@ -12,7 +12,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ cou
   const store = await getCatalog().openCourse(courseId);
   if (!store) return new Response("과정을 찾을 수 없습니다.", { status: 404 });
   const data = await store.readAll();
-  const file = await buildRosterWorkbook(data.trainees, data.replies, data.course?.replyDeadline);
+  const file = await buildRosterWorkbook(data.trainees, data.replies, data.course?.replyDeadline, data.history);
   const name = exportFileName(new Date().toISOString());
 
   return new Response(new Uint8Array(file), {

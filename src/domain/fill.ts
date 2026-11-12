@@ -14,7 +14,7 @@ const byWaitNo = (a: Trainee, b: Trainee) => (a.waitNo ?? Infinity) - (b.waitNo 
 export function fillCandidates(trainees: Trainee[]): FillCandidates {
   const waiting = trainees.filter((t) => t.status === "대기").sort(byWaitNo);
   if (waiting.length > 0) return { mode: "waitlist", candidate: waiting[0] };
-  const pool = trainees.filter((t) => t.status === "미선정").sort((a, b) => a.empNo.localeCompare(b.empNo));
+  const pool = trainees.filter((t) => t.status === "미선정" && !t.rejectedBy).sort((a, b) => a.empNo.localeCompare(b.empNo));
   return pool.length > 0 ? { mode: "pool", pool } : { mode: "none" };
 }
 

@@ -89,7 +89,7 @@ async function RepliesContent({ params, searchParams }: { params: Params; search
               <FillPanel
                 key={v.id}
                 target={toPerson(v)}
-                reasonLabel={v.status === "불참" ? (v.absentOrigin === "참석후취소" ? "참석 후 취소" : "불참") : "직접 제외"}
+                reasonLabel={v.status === "불참" ? (v.absentOrigin === "참석후취소" ? "참석 후 취소" : "불참") : "선정 취소"}
                 candidates={panelCandidates}
                 defaultDeadline={defaultDeadline}
                 exceeds={exceeds}

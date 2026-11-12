@@ -9,8 +9,11 @@ import type { DrawRecord, Trainee } from "./types";
 export const MAX_DRAW_SEATS = 1000;
 
 /** 추첨 대상자: 첫 추첨이면 "신청", 이미 추첨한 적이 있으면(재추첨) "대기·미선정" */
-export function drawPool<T extends Pick<Trainee, "status">>(trainees: T[], drawCount: number): T[] {
-  return trainees.filter((t) => (drawCount === 0 ? t.status === "신청" : t.status === "대기" || t.status === "미선정"));
+export function drawPool<T extends Pick<Trainee, "status"> & Partial<Pick<Trainee, "rejectedBy">>>(trainees: T[], drawCount: number): T[] {
+  // 담당자가 직접 미선정 처리한 사람(rejectedBy)은 어느 추첨에도 들어가지 않는다
+  return trainees.filter(
+    (t) => !t.rejectedBy && (drawCount === 0 ? t.status === "신청" : t.status === "대기" || t.status === "미선정"),
+  );
 }
 
 export interface LotResult {

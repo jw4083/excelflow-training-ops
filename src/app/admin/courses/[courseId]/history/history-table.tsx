@@ -1,6 +1,6 @@
 // 변경 이력 표 (DESIGN 2.3): 일시, 종류(+ 본인/담당자 입력), 대상(사번·이름), 변경 전, 변경 후, 사유. 읽기 전용이며 수정·삭제 버튼은 없다 (PRD M1-7).
 import Link from "next/link";
-import { actorOf, describeChange, historyTarget, type HistoryFilter, type NameOf } from "@/domain/historyView";
+import { actorOf, describeChange, historyTarget, kindLabel, type HistoryFilter, type NameOf } from "@/domain/historyView";
 import type { Page } from "@/domain/roster";
 import type { History } from "@/domain/types";
 import { formatKst } from "@/lib/datetime";
@@ -19,6 +19,8 @@ const KIND_STYLE: Record<History["kind"], string> = {
   회신대리입력: "bg-orange-100 text-orange-900 dark:bg-orange-900 dark:text-orange-100",
   참석취소: "bg-rose-100 text-rose-900 dark:bg-rose-900 dark:text-rose-100",
   명단초기화: "bg-red-700 text-white",
+  미선정처리: "bg-zinc-300 text-zinc-900 dark:bg-zinc-600 dark:text-zinc-100",
+  미선정복구: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
 };
 
 function Lines({ lines }: { lines: string[] }) {
@@ -62,7 +64,7 @@ export function HistoryTable({ page, filter, nameOf, courseId }: { page: Page<Hi
                 <tr key={entry.id} className="align-top hover:bg-zinc-50">
                   <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatKst(entry.at)}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium whitespace-nowrap ${KIND_STYLE[entry.kind]}`}>{entry.kind}</span>
+                    <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium whitespace-nowrap ${KIND_STYLE[entry.kind]}`}>{kindLabel(entry.kind)}</span>
                     {/* 본인 변경인지 담당자 입력인지 (회신·참석 취소 이력) */}
                     {actor && <span className="mt-1 block text-sm text-zinc-600 dark:text-zinc-400">{actor === "담당자" ? "담당자 입력" : "본인 변경"}</span>}
                   </td>

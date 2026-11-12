@@ -1,11 +1,11 @@
 // 명단 표 (DESIGN 2.3): 사번, 이름, 부서, 상태, 수기 표시, 대기 순번, 회신 여부.
-// 선별·제외·충원 같은 버튼은 해당 작업(12, 20 등)에서 이 표에 붙인다. 지금은 보기 전용이다.
+// 선별·미선정 처리·선정 취소·충원 같은 버튼은 해당 작업(12, 20 등)에서 이 표에 붙인다. 지금은 보기 전용이다.
 import Link from "next/link";
-import { replyLabel, type Page, type RosterFilter } from "@/domain/roster";
+import { replyLabel, type Page, type RosterFilter, type StatusView } from "@/domain/roster";
 import type { Reply, Trainee } from "@/domain/types";
 import { ExcludeButton } from "./exclude-button";
 import { rosterHref } from "./roster-tabs";
-import { CancelSelectionButton, SELECT_FORM_ID } from "./selection-controls";
+import { CancelSelectionButton, RestoreRejectedButton, SELECT_FORM_ID } from "./selection-controls";
 
 // 색만으로 구분하지 않도록 상태는 항상 글자로도 보여 준다
 const STATUS_STYLE: Record<Trainee["status"], string> = {
@@ -18,7 +18,7 @@ const STATUS_STYLE: Record<Trainee["status"], string> = {
 };
 
 type Row = Pick<Trainee, "id" | "empNo" | "name" | "dept" | "status" | "isManual" | "waitNo" | "selectedVia"> &
-  Partial<Pick<Trainee, "absentOrigin">>;
+  Partial<Pick<Trainee, "absentOrigin" | "rejectedBy" | "rejectReason">>;
 
 export function RosterTable({
   page,
@@ -26,6 +26,7 @@ export function RosterTable({
   replies,
   canCancelSelection,
   courseId,
+  views,
 }: {
   page: Page<Row>;
   filter: RosterFilter;
@@ -33,12 +34,16 @@ export function RosterTable({
   /** 2차 추첨 전인가 (추첨 전에만 1차 선별을 취소할 수 있다) */
   canCancelSelection: boolean;
   courseId: string;
+  /** 교육생별 "상태 이름 + 처리 사유" (제외·미선정의 네 가지 경우를 구분해 보여 준다) */
+  views: ReadonlyMap<string, StatusView>;
 }) {
   // "신청" 탭에는 선별용 체크박스를, 1차 선별로 선정된 사람에게는(추첨 전이면) "선별 취소" 버튼을 붙인다
   const selectable = filter === "신청";
   const canCancel = (t: Row) => canCancelSelection && t.status === "선정" && t.selectedVia === "선별";
-  const canExclude = (t: Row) => t.status === "선정"; // 선정자는 사유를 적고 직접 제외할 수 있다
-  const showActions = page.items.some((t) => canCancel(t) || canExclude(t));
+  const canExclude = (t: Row) => t.status === "선정"; // 선정자는 사유를 적고 선정을 취소할 수 있다
+  // 담당자가 직접 미선정 처리한 사람은 추첨 전에만 "신청"으로 되돌릴 수 있다 (추첨 결과 미선정은 되돌리지 않는다)
+  const canRestore = (t: Row) => canCancelSelection && t.status === "미선정" && Boolean(t.rejectedBy);
+  const showActions = page.items.some((t) => canCancel(t) || canExclude(t) || canRestore(t));
   if (page.total === 0) {
     return (
       <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center text-base text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
@@ -92,7 +97,8 @@ export function RosterTable({
                 <td className="px-4 py-3">{t.name}</td>
                 <td className="px-4 py-3">{t.dept}</td>
                 <td className="px-4 py-3">
-                  <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLE[t.status]}`}>{t.status}</span>
+                  <span className={`inline-block rounded-full px-3 py-1 text-sm font-medium ${STATUS_STYLE[t.status]}`}>{views.get(t.id)?.label ?? t.status}</span>
+                  {views.get(t.id)?.note && <span className="mt-1 block max-w-56 text-sm break-words text-zinc-600 dark:text-zinc-400">{views.get(t.id)?.note}</span>}
                 </td>
                 <td className="px-4 py-3">
                   {t.isManual && (
@@ -106,6 +112,7 @@ export function RosterTable({
                     <div className="flex flex-wrap items-start gap-2">
                       {canCancel(t) && <CancelSelectionButton traineeId={t.id} name={t.name} />}
                       {canExclude(t) && <ExcludeButton traineeId={t.id} name={t.name} />}
+                      {canRestore(t) && <RestoreRejectedButton traineeId={t.id} name={t.name} />}
                     </div>
                   </td>
                 )}

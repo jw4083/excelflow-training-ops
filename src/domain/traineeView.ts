@@ -18,7 +18,9 @@ export interface StatusMessage {
  * - 충원이 확정된 불참자(`replacedBy`가 있음)는 참석으로 바꿀 수 없다고 안내한다 (PRD M2-7). 누구로 충원됐는지는 보여주지 않는다.
  */
 export function describeMyStatus(
-  trainee: Pick<Trainee, "status" | "waitNo" | "replacedBy"> & Partial<Pick<Trainee, "absentOrigin">>,
+  trainee: Pick<Trainee, "status" | "waitNo" | "replacedBy"> & Partial<Pick<Trainee, "absentOrigin" | "excludedFrom">>,
+  /** 저장된 상태 "제외"의 경위를 화면이 따로 알고 있으면 넘긴다 (예전 데이터는 불참 회신 흔적으로 정한 값). 없으면 저장된 값으로 정한다 */
+  removal?: "선정취소" | "불참" | null,
 ): StatusMessage {
   switch (trainee.status) {
     case "신청":
@@ -64,11 +66,18 @@ export function describeMyStatus(
             detail: "참석할 수 있게 되었다면 회신 기한 안에 다시 회신해 주세요.",
           };
     case "제외":
-      return {
-        tone: "bad",
-        title: "교육 명단에서 제외되었습니다",
-        detail: "궁금한 점은 교육 담당자에게 문의해 주세요.",
-      };
+      // 화면에서 "제외"라는 말은 쓰지 않는다. 불참 후 충원된 자리는 불참 처리 안내, 선정됐다가 담당자가 취소한 사람은 "선정이 취소되었습니다"
+      return (removal ?? trainee.excludedFrom ?? (trainee.absentOrigin ? "불참" : "선정취소")) === "불참"
+        ? {
+            tone: "bad",
+            title: "불참으로 처리되었고 자리가 충원되었습니다",
+            detail: "궁금한 점은 교육 담당자에게 문의해 주세요.",
+          }
+        : {
+            tone: "bad",
+            title: "선정이 취소되었습니다",
+            detail: "궁금한 점은 교육 담당자에게 문의해 주세요.",
+          };
   }
 }
 

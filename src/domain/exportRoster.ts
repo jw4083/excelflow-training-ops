@@ -3,9 +3,9 @@
 // - 사번 열은 글자(텍스트) 서식이다: 엑셀에서 열어도 앞자리 0이 사라지지 않는다 (PLAN SC-9).
 // - 불참 상세 사유는 대외비라, 이 파일을 받을 수 있는 사람은 로그인한 담당자뿐이다 (받는 길은 app/admin/export/route.ts).
 import ExcelJS from "exceljs";
-import { absentOriginLabel, replyLabel } from "./roster";
+import { absentOriginLabel, removalIndex, replyLabel, statusView } from "./roster";
 import { formatKst } from "@/lib/datetime";
-import type { Reply, Trainee } from "./types";
+import type { History, Reply, Trainee } from "./types";
 
 export const EXPORT_SHEET_NAME = "최종 명단";
 
@@ -30,13 +30,15 @@ export const EXPORT_COLUMNS = [
   { header: "회신 기한", width: 18 },
   { header: "제출 일시", width: 18 },
   { header: "담당자 입력", width: 12 },
+  { header: "처리 사유", width: 32 },
 ] as const;
 
 type Cell = string | number;
 
 /** 사번 순으로 정렬한 한 줄씩의 값 (모두 글자, 대기 순번만 숫자). 값이 없는 칸은 빈 글자 */
-export function buildExportRows(trainees: Trainee[], replies: Reply[], courseDeadline?: string): Cell[][] {
+export function buildExportRows(trainees: Trainee[], replies: Reply[], courseDeadline?: string, history: History[] = []): Cell[][] {
   const byId = new Map(replies.map((r) => [r.traineeId, r]));
+  const removals = removalIndex(history); // 예전 데이터의 제외 경위는 변경 이력으로 계산한다
   return [...trainees]
     .sort((a, b) => a.empNo.localeCompare(b.empNo))
     .map((t) => {
@@ -49,7 +51,7 @@ export function buildExportRows(trainees: Trainee[], replies: Reply[], courseDea
         t.empNo,
         t.name,
         t.dept,
-        t.status,
+        statusView(t, removals, byId.get(t.id)).label, // 화면과 같은 상태 이름 (미선정 / 선정 취소 / 불참 후 충원). 처리 사유는 맨 끝 칸
         t.isManual ? "수기" : "",
         t.manualReason ?? "",
         t.status === "대기" && t.waitNo ? t.waitNo : "",
@@ -65,12 +67,13 @@ export function buildExportRows(trainees: Trainee[], replies: Reply[], courseDea
         (t.status === "선정" || t.status === "불참") && deadline && !Number.isNaN(Date.parse(deadline)) ? formatKst(deadline) : "",
         reply ? formatKst(reply.submittedAt) : "",
         reply?.byAdmin ? "담당자 입력" : "",
+        statusView(t, removals, byId.get(t.id)).note,
       ];
     });
 }
 
 /** .xlsx 파일 내용을 만든다 */
-export async function buildRosterWorkbook(trainees: Trainee[], replies: Reply[], courseDeadline?: string): Promise<Buffer> {
+export async function buildRosterWorkbook(trainees: Trainee[], replies: Reply[], courseDeadline?: string, history: History[] = []): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(EXPORT_SHEET_NAME, { views: [{ state: "frozen", ySplit: 1 }] });
   sheet.columns = EXPORT_COLUMNS.map((c) => ({ header: c.header, width: c.width }));
@@ -78,7 +81,7 @@ export async function buildRosterWorkbook(trainees: Trainee[], replies: Reply[],
 
   // 사번 열(A)은 글자 서식("@")으로 미리 지정하고, 값도 글자로 넣는다 (숫자로 읽혀 앞자리 0이 사라지는 것을 막는다)
   sheet.getColumn(1).numFmt = "@";
-  for (const row of buildExportRows(trainees, replies, courseDeadline)) {
+  for (const row of buildExportRows(trainees, replies, courseDeadline, history)) {
     const added = sheet.addRow(row);
     added.getCell(1).numFmt = "@";
     added.getCell(1).value = String(row[0]);

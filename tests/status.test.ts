@@ -11,8 +11,8 @@ const BEFORE = "2026-11-20T18:00:00+09:00"; // 기한이 아직 안 지남
 const AFTER = "2026-11-10T18:00:00+09:00"; // 기한이 지남
 
 describe("작업 5: 상태 전환 규칙표", () => {
-  it("동작은 9가지이고 표에 모두 있다", () => {
-    expect([...ACTIONS]).toHaveLength(9);
+  it("동작은 11가지이고 표에 모두 있다", () => {
+    expect([...ACTIONS]).toHaveLength(11);
     for (const a of ACTIONS) expect(TRANSITION_TABLE[a]).toBeDefined();
   });
 
@@ -38,6 +38,7 @@ describe("작업 5: 상태 전환 규칙표", () => {
         "미선정→선정", // 충원(대기자 없을 때) / 재추첨
         "미선정→대기", // 재추첨
         "미선정→미선정", // 재추첨
+        "미선정→신청", // 담당자 미선정 복구 (추첨 전)
         "새로→선정", // 수기 추가
       ].sort(),
     );

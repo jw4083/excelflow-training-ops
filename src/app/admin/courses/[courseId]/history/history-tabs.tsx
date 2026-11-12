@@ -1,6 +1,6 @@
 // 종류 탭 10개 (전체 + 9종)와 각 탭의 건수. 탭을 누르면 주소의 ?kind= 값이 바뀌어 같은 화면이 다시 그려진다.
 import Link from "next/link";
-import { HISTORY_FILTERS, type HistoryFilter } from "@/domain/historyView";
+import { HISTORY_FILTERS, kindLabel, type HistoryFilter } from "@/domain/historyView";
 
 /** 탭·쪽 이동 주소. "전체"와 1쪽은 주소를 짧게 둔다 */
 export function historyHref(courseId: string, filter: HistoryFilter, page = 1): string {
@@ -27,7 +27,7 @@ export function HistoryTabs({ active, counts, courseId }: { active: HistoryFilte
                 : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
             }`}
           >
-            {filter}
+            {filter === "전체" ? filter : kindLabel(filter)}
             <span className={`text-sm tabular-nums ${isActive ? "opacity-90" : "text-zinc-500 dark:text-zinc-400"}`} aria-label={`${counts[filter]}건`}>
               {counts[filter]}
             </span>

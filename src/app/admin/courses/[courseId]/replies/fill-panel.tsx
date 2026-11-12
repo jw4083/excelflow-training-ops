@@ -26,7 +26,7 @@ export function FillPanel({
   defaultOpen,
 }: {
   target: PanelPerson;
-  reasonLabel: string; // "불참" 또는 "직접 제외"
+  reasonLabel: string; // "불참" 또는 "선정 취소"
   candidates: PanelCandidates;
   defaultDeadline: string; // 한국 시간 "YYYY-MM-DDTHH:mm" (지금부터 3일 후)
   exceeds: boolean; // 확정하면 정원을 넘는가
@@ -50,7 +50,7 @@ export function FillPanel({
           aria-expanded={open}
           className="h-11 rounded-lg bg-primary px-4 text-base font-semibold text-white hover:bg-primary-hover dark:bg-amber-200 dark:text-amber-950"
         >
-          {open ? "닫기" : reasonLabel === "불참" ? "제외하고 충원" : "충원"}
+          {open ? "닫기" : reasonLabel === "불참" ? "선정 취소하고 충원" : "충원"}
         </button>
       </div>
 

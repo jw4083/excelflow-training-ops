@@ -10,6 +10,7 @@ import type { Store } from "@/store";
 
 /** 한 번에 처리할 수 있는 최대 인원 (엑셀 한 번에 받는 최대 행 수와 같다) */
 export const MAX_SELECTION_BATCH = 1000;
+export const MAX_SELECT_REASON = 300;
 
 export type SelectionResult =
   | { ok: true; count: number; record: SelectionRecord }
@@ -17,7 +18,7 @@ export type SelectionResult =
 
 type Kind = SelectionRecord["kind"];
 
-async function run(store: Store, kind: Kind, traineeIds: string[], options: ChangeOptions): Promise<SelectionResult> {
+async function run(store: Store, kind: Kind, traineeIds: string[], reasonInput: string | undefined, options: ChangeOptions): Promise<SelectionResult> {
   const ids = [...new Set(traineeIds.filter((id) => typeof id === "string" && id !== ""))]; // 같은 사람을 두 번 체크해도 한 번만
   if (ids.length === 0) {
     return { ok: false, reason: kind === "선별" ? "선정할 신청자를 먼저 체크해 주세요." : "선별을 취소할 사람을 골라 주세요." };
@@ -26,13 +27,24 @@ async function run(store: Store, kind: Kind, traineeIds: string[], options: Chan
     return { ok: false, reason: `한 번에 ${MAX_SELECTION_BATCH.toLocaleString("ko-KR")}명까지만 처리할 수 있습니다.` };
   }
 
+  // 우선 선정(선별)은 사유가 필수다: 여러 명이면 같은 공통 사유가 각 대상자에게 기록된다
+  const text = reasonInput?.trim();
+  if (kind === "선별") {
+    if (!text) return { ok: false, reason: "선정 사유를 입력해 주세요." };
+    if (text.length > MAX_SELECT_REASON) return { ok: false, reason: `선정 사유는 ${MAX_SELECT_REASON}자까지 입력할 수 있습니다.` };
+  }
+
   const now = options.now ?? new Date().toISOString();
   const newId = options.newId ?? (() => randomUUID());
-  const record: SelectionRecord = { id: newId(), at: now, kind, traineeIds: ids };
+  const record: SelectionRecord = { id: newId(), at: now, kind, traineeIds: ids, ...(kind === "선별" ? { reason: text } : {}) };
 
   const result = await changeStatuses(
     store,
-    ids.map((traineeId) => ({ action: kind === "선별" ? ("선별" as const) : ("선별취소" as const), traineeId })),
+    ids.map((traineeId) => ({
+      action: kind === "선별" ? ("선별" as const) : ("선별취소" as const),
+      traineeId,
+      ...(kind === "선별" ? { reason: text } : {}),
+    })),
     { appendSelections: [record] },
     { now, newId },
   );
@@ -49,12 +61,12 @@ async function run(store: Store, kind: Kind, traineeIds: string[], options: Chan
   return { ok: false, reason: `${prefix}${reason} 아무도 변경되지 않았습니다.` };
 }
 
-/** 체크한 신청자를 "선정"으로 바꾼다 (1차 선별) */
-export function selectApplicants(store: Store, traineeIds: string[], options: ChangeOptions = {}): Promise<SelectionResult> {
-  return run(store, "선별", traineeIds, options);
+/** 체크한 신청자를 "선정"으로 바꾼다 (1차 선별 = 우선 선정). 사유는 필수이고 모든 대상자에게 같은 사유가 기록된다 */
+export function selectApplicants(store: Store, traineeIds: string[], reason: string, options: ChangeOptions = {}): Promise<SelectionResult> {
+  return run(store, "선별", traineeIds, reason, options);
 }
 
 /** 1차 선별로 선정된 사람을 "신청"으로 되돌린다 (2차 추첨 전까지) */
 export function cancelSelection(store: Store, traineeIds: string[], options: ChangeOptions = {}): Promise<SelectionResult> {
-  return run(store, "선별취소", traineeIds, options);
+  return run(store, "선별취소", traineeIds, undefined, options);
 }
