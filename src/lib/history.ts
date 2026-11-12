@@ -182,7 +182,6 @@ function buildOne(data: DbData, input: StatusChangeInput, now: string, newId: ()
       isManual: true,
       manualReason: manual.manualReason.trim(),
       selectedVia: "수기",
-      loginFails: 0,
       createdAt: now,
       updatedAt: now,
     };

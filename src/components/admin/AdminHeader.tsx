@@ -1,13 +1,7 @@
-// 담당자 화면 제목줄 (DESIGN 2.2): 앱 이름 + 과정 이름, 오른쪽에 "교육생 주소 복사"(작업 15)와 로그아웃 버튼.
-import { Suspense } from "react";
+// 담당자 화면 제목줄 (DESIGN 2.2): 앱 이름(누르면 과정 목록), 오른쪽에 "교육생 주소 복사"(작업 15)와 로그아웃 버튼.
 import { logoutAdmin } from "@/app/actions/auth";
-import { getAdminSummary } from "@/lib/adminData";
+import Link from "next/link";
 import { CopyTraineeUrlButton } from "./CopyTraineeUrlButton";
-
-async function CourseName() {
-  const { courseName } = await getAdminSummary();
-  return courseName ?? "과정 정보 미입력";
-}
 
 export function AdminHeader() {
   return (
@@ -16,12 +10,8 @@ export function AdminHeader() {
       <div className="mx-auto flex w-full max-w-6xl items-start justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
           {/* break-keep: 휴대폰처럼 좁을 때 단어 중간("통합/관리")이 아니라 띄어쓰기에서만 줄을 바꾼다 */}
-          <p className="flex items-center gap-2 text-base font-bold tracking-tight break-keep sm:text-lg"><span aria-hidden className="h-3 w-3 rounded-full bg-primary" />교육 운영 통합관리</p>
-          <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">
-            <Suspense fallback="…">
-              <CourseName />
-            </Suspense>
-          </p>
+          <Link href="/admin" className="flex items-center gap-2 text-base font-bold tracking-tight break-keep sm:text-lg"><span aria-hidden className="h-3 w-3 rounded-full bg-primary" />교육 운영 통합관리</Link>
+          <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">교육 과정 관리</p>
         </div>
         <div className="flex shrink-0 items-start gap-2">
           <CopyTraineeUrlButton />

@@ -3,15 +3,15 @@ import Link from "next/link";
 import { HISTORY_FILTERS, type HistoryFilter } from "@/domain/historyView";
 
 /** 탭·쪽 이동 주소. "전체"와 1쪽은 주소를 짧게 둔다 */
-export function historyHref(filter: HistoryFilter, page = 1): string {
+export function historyHref(courseId: string, filter: HistoryFilter, page = 1): string {
   const query = new URLSearchParams();
   if (filter !== "전체") query.set("kind", filter);
   if (page > 1) query.set("page", String(page));
   const text = query.toString();
-  return text ? `/admin/history?${text}` : "/admin/history";
+  return text ? `/admin/courses/${courseId}/history?${text}` : `/admin/courses/${courseId}/history`;
 }
 
-export function HistoryTabs({ active, counts }: { active: HistoryFilter; counts: Record<HistoryFilter, number> }) {
+export function HistoryTabs({ active, counts, courseId }: { active: HistoryFilter; counts: Record<HistoryFilter, number>; courseId: string }) {
   return (
     <nav aria-label="종류별 보기" className="flex gap-1 overflow-x-auto border-b border-zinc-200 pb-2 dark:border-zinc-800">
       {HISTORY_FILTERS.map((filter) => {
@@ -19,7 +19,7 @@ export function HistoryTabs({ active, counts }: { active: HistoryFilter; counts:
         return (
           <Link
             key={filter}
-            href={historyHref(filter)}
+            href={historyHref(courseId, filter)}
             aria-current={isActive ? "page" : undefined}
             className={`flex h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
               isActive

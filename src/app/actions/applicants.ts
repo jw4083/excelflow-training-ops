@@ -2,9 +2,8 @@
 // 신청자 엑셀 업로드 서버 처리 (PLAN 작업 10). 담당자만 할 수 있으므로 시작하자마자 로그인을 다시 확인한다.
 import { revalidatePath } from "next/cache";
 import type { UploadSummary } from "@/domain/applicants";
-import { requireAdmin } from "@/lib/auth";
+import { COURSE_NOT_FOUND, openAdminCourseFromForm } from "@/lib/adminCourse";
 import { importApplicants } from "@/lib/importApplicants";
-import { getStore } from "@/store";
 
 export interface UploadState {
   status?: "success" | "none" | "error"; // 등록됨 / 올렸지만 새로 등록된 사람 없음 / 거부됨
@@ -13,14 +12,15 @@ export interface UploadState {
 }
 
 export async function uploadApplicants(_prev: UploadState | undefined, formData: FormData): Promise<UploadState> {
-  await requireAdmin(); // proxy와 별개로, 이 서버 처리 안에서도 로그인을 확인한다 (Next.js 문서 권장)
+  const store = await openAdminCourseFromForm(formData); // 로그인 확인 + 이 과정의 저장소만 연다
+  if (!store) return { status: "error", message: COURSE_NOT_FOUND };
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { status: "error", message: "올릴 엑셀 파일을 선택해 주세요." };
   }
 
-  const result = await importApplicants(getStore(), {
+  const result = await importApplicants(store, {
     name: file.name,
     size: file.size,
     buffer: Buffer.from(await file.arrayBuffer()),

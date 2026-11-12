@@ -18,30 +18,31 @@ import {
 import { defaultFillDeadline, fillCandidates, fillExceedsCapacity, openVacancies } from "@/domain/fill";
 import type { Trainee } from "@/domain/types";
 import { formatKst, isoToKstLocal } from "@/lib/datetime";
-import { requireAdmin } from "@/lib/auth";
-import { getStore } from "@/store";
+import { courseBase, openAdminCourse } from "@/lib/adminCourse";
 import { FillPanel, type PanelCandidates } from "./fill-panel";
 
+type Params = Promise<{ courseId: string }>;
 type SearchParams = Promise<{ filter?: string | string[]; open?: string | string[]; filled?: string | string[] }>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const toPerson = (t: Trainee) => ({ id: t.id, name: t.name, dept: t.dept, empNo: t.empNo, waitNo: t.waitNo });
 
-export default function RepliesPage({ searchParams }: { searchParams: SearchParams }) {
+export default function RepliesPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   return (
     <Suspense fallback={<p className="px-4 py-8 text-base text-zinc-600 dark:text-zinc-400">불러오는 중…</p>}>
-      <RepliesContent searchParams={searchParams} />
+      <RepliesContent params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function RepliesContent({ searchParams }: { searchParams: SearchParams }) {
-  await requireAdmin();
+async function RepliesContent({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
+  const { courseId } = await params;
+  const store = await openAdminCourse(courseId);
   await connection();
-  const params = await searchParams;
-  const filter = parseReplyFilter(params.filter);
-  const openId = first(params.open);
-  const filledId = first(params.filled);
-  const data = await getStore().readAll();
+  const query = await searchParams;
+  const filter = parseReplyFilter(query.filter);
+  const openId = first(query.open);
+  const filledId = first(query.filled);
+  const data = await store.readAll();
   const nowIso = new Date().toISOString();
   const rows = buildReplyRows(data.trainees, data.replies, data.course, nowIso);
 
@@ -113,7 +114,7 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
         {REPLY_FILTERS.map((f) => (
           <Link
             key={f}
-            href={f === "all" ? "/admin/replies" : `/admin/replies?filter=${f}`}
+            href={f === "all" ? `${courseBase(courseId)}/replies` : `${courseBase(courseId)}/replies?filter=${f}`}
             aria-current={filter === f ? "page" : undefined}
             className={`inline-flex h-11 items-center rounded-lg border px-4 text-base font-medium ${
               filter === f
@@ -133,7 +134,7 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
       ) : (
         <ul className="flex flex-col gap-3">
           {shown.map((row) => (
-            <ReplyCard key={row.trainee.id} row={row} />
+            <ReplyCard key={row.trainee.id} row={row} courseId={courseId} />
           ))}
         </ul>
       )}
@@ -148,7 +149,7 @@ const KIND_STYLE = {
   미회신: "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100",
 } as const;
 
-function ReplyCard({ row }: { row: ReplyRow }) {
+function ReplyCard({ row, courseId }: { row: ReplyRow; courseId: string }) {
   const { trainee, reply, kind, deadline, cancelled, newCancel } = row;
   return (
     <li className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800">
@@ -195,7 +196,7 @@ function ReplyCard({ row }: { row: ReplyRow }) {
       </dl>
 
       {newCancel && (
-        <form action={acknowledgeCancelAction.bind(null, trainee.id)}>
+        <form action={acknowledgeCancelAction.bind(null, courseId, trainee.id)}>
           <button type="submit" className="h-11 rounded-lg border border-rose-400 bg-white px-4 text-base font-semibold text-rose-900 hover:bg-rose-50">
             확인 (새 취소 표시 끄기)
           </button>
@@ -215,7 +216,7 @@ function ReplyCard({ row }: { row: ReplyRow }) {
               roommateName: reply?.roommateName,
               roommateDept: reply?.roommateDept,
             }}
-            onSubmitAction={adminSubmitReplyAction.bind(null, trainee.id)}
+            onSubmitAction={adminSubmitReplyAction.bind(null, courseId, trainee.id)}
             submitLabel="담당자 입력으로 저장"
           />
         </div>

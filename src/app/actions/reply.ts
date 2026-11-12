@@ -5,7 +5,8 @@ import type { ReplyField } from "@/domain/replyRules";
 import { getTraineeEmpNo } from "@/lib/auth";
 import { TRAINEE_PATH } from "@/lib/paths";
 import { submitReply } from "@/lib/reply";
-import { getStore } from "@/store";
+import { findMyEnrollment } from "@/lib/traineeCourse";
+import { getCatalog } from "@/store";
 
 export interface ReplyFormState {
   ok?: boolean;
@@ -23,10 +24,14 @@ const yesNo = (v: string | undefined) => (v === "yes" ? true : v === "no" ? fals
 export async function submitReplyAction(_prev: ReplyFormState, formData: FormData): Promise<ReplyFormState> {
   const empNo = await getTraineeEmpNo();
   if (!empNo) return { message: "로그인이 풀렸습니다. 새로고침해서 다시 로그인해 주세요." };
-  const me = await getStore().getTraineeByEmpNo(empNo);
-  if (!me) return { message: "로그인이 풀렸습니다. 새로고침해서 다시 로그인해 주세요." };
+  // 어느 과정의 회신인지는 화면이 보낸 번호로 정하되, 이 사번이 그 과정(보관되지 않은 과정)에 실제로 등록돼 있을 때만 받는다
+  const courseId = text(formData, "courseId");
+  const catalog = getCatalog();
+  const mine = courseId ? await findMyEnrollment(catalog, empNo, courseId) : null;
+  const store = mine ? await catalog.openCourse(mine.courseId) : null;
+  if (!mine || !store) return { message: "이 과정을 찾을 수 없습니다. 내 과정 목록에서 다시 선택해 주세요." };
 
-  const result = await submitReply(getStore(), me.id, {
+  const result = await submitReply(store, mine.trainee.id, {
     attend: yesNo(text(formData, "attend")),
     absentType: text(formData, "absentType"),
     absentDetail: text(formData, "absentDetail"),
@@ -36,7 +41,7 @@ export async function submitReplyAction(_prev: ReplyFormState, formData: FormDat
   }, { confirmed: text(formData, "confirm") === "yes" });
   if (!result.ok) return { message: result.reason, errors: result.errors, needsConfirm: result.needsConfirm };
 
-  revalidatePath(TRAINEE_PATH);
+  revalidatePath(TRAINEE_PATH, "layout");
   if (result.cancelled) {
     return { ok: true, message: result.unchanged ? "이미 불참으로 변경되어 있습니다." : "불참으로 변경되었습니다. 담당자에게 바로 전달됩니다." };
   }

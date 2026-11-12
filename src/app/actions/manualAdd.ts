@@ -2,9 +2,8 @@
 // 수기 추가 서버 처리 (PLAN 작업 21). 담당자만 할 수 있으므로 시작하자마자 로그인을 다시 확인한다.
 import { revalidatePath } from "next/cache";
 import { kstLocalToIso } from "@/lib/datetime";
-import { requireAdmin } from "@/lib/auth";
+import { COURSE_NOT_FOUND, openAdminCourseFromForm } from "@/lib/adminCourse";
 import { addManualTrainee } from "@/lib/manualAdd";
-import { getStore } from "@/store";
 
 export interface ManualAddState {
   status?: "success" | "error";
@@ -18,14 +17,15 @@ const text = (formData: FormData, key: string) => {
 };
 
 export async function addManualAction(_prev: ManualAddState | undefined, formData: FormData): Promise<ManualAddState> {
-  await requireAdmin();
+  const store = await openAdminCourseFromForm(formData);
+  if (!store) return { status: "error", message: COURSE_NOT_FOUND };
 
   // 회신 기한은 비워 둘 수 있다(과정 기한을 따름). 쓴 값이 날짜·시간 형식이 아니면 거부한다
   const rawDeadline = text(formData, "replyDeadline").trim();
   const replyDeadline = rawDeadline === "" ? undefined : (kstLocalToIso(rawDeadline) ?? null);
   if (replyDeadline === null) return { status: "error", message: "회신 기한은 날짜와 시간으로 입력해 주세요." };
 
-  const result = await addManualTrainee(getStore(), {
+  const result = await addManualTrainee(store, {
     empNo: text(formData, "empNo").trim(),
     name: text(formData, "name"),
     dept: text(formData, "dept"),

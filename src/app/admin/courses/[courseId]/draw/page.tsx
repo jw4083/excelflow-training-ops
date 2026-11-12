@@ -4,25 +4,27 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { capacitySummary } from "@/domain/capacity";
 import { drawPool } from "@/domain/draw";
-import { requireAdmin } from "@/lib/auth";
-import { getStore } from "@/store";
+import { courseBase, openAdminCourse } from "@/lib/adminCourse";
 import { CapacitySummaryBar } from "../roster/capacity-summary";
 import { DrawForm } from "./draw-form";
 import { DrawRecords, SelectionRecords } from "./draw-records";
 
-export default function DrawPage() {
+type Params = Promise<{ courseId: string }>;
+
+export default function DrawPage({ params }: { params: Params }) {
   // 로그인 확인과 저장소 읽기는 요청이 들어온 뒤에 하는 일이므로 Suspense 안에 둔다 (Cache Components 규칙)
   return (
     <Suspense fallback={<p className="px-4 py-8 text-base text-zinc-600 dark:text-zinc-400">불러오는 중…</p>}>
-      <DrawContent />
+      <DrawContent params={params} />
     </Suspense>
   );
 }
 
-async function DrawContent() {
-  await requireAdmin();
+async function DrawContent({ params }: { params: Params }) {
+  const { courseId } = await params;
+  const store = await openAdminCourse(courseId);
   await connection();
-  const data = await getStore().readAll();
+  const data = await store.readAll();
 
   const redraw = data.draws.length > 0;
   const pool = drawPool(data.trainees, data.draws.length);
@@ -53,7 +55,7 @@ async function DrawContent() {
         ) : (
           <p className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-base text-amber-950 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100">
             정원은 과정에 저장되므로 먼저{" "}
-            <Link href="/admin/course" className="font-semibold underline">
+            <Link href={`${courseBase(courseId)}/course`} className="font-semibold underline">
               과정 정보
             </Link>
             를 입력해 주세요.

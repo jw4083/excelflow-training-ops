@@ -124,7 +124,7 @@ describe("작업 7: 화면 보호(proxy)", () => {
     expect(loggedOut.headers.get("x-middleware-next")).toBe("1");
 
     const loggedIn = proxy(request(`${ADMIN_COOKIE}=${createAdminToken()}`, LOGIN_URL));
-    expect(new URL(loggedIn.headers.get("location") ?? "").pathname).toBe("/admin/roster");
+    expect(new URL(loggedIn.headers.get("location") ?? "").pathname).toBe("/admin");
 
     // 위조된 쿠키는 로그인으로 인정하지 않으므로 로그인 화면이 그대로 보인다
     const forged = proxy(request(`${ADMIN_COOKIE}=abc.def`, LOGIN_URL));

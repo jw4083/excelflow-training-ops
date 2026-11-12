@@ -25,12 +25,14 @@ export function RosterTable({
   filter,
   replies,
   canCancelSelection,
+  courseId,
 }: {
   page: Page<Row>;
   filter: RosterFilter;
   replies: ReadonlyMap<string, Pick<Reply, "attend">>;
   /** 2차 추첨 전인가 (추첨 전에만 1차 선별을 취소할 수 있다) */
   canCancelSelection: boolean;
+  courseId: string;
 }) {
   // "신청" 탭에는 선별용 체크박스를, 1차 선별로 선정된 사람에게는(추첨 전이면) "선별 취소" 버튼을 붙인다
   const selectable = filter === "신청";
@@ -120,7 +122,7 @@ export function RosterTable({
         {page.pageCount > 1 && (
           <nav aria-label="쪽 이동" className="flex items-center gap-2">
             {page.page > 1 ? (
-              <Link href={rosterHref(filter, page.page - 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
+              <Link href={rosterHref(courseId, filter, page.page - 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
                 이전
               </Link>
             ) : (
@@ -132,7 +134,7 @@ export function RosterTable({
               {page.page} / {page.pageCount}
             </span>
             {page.page < page.pageCount ? (
-              <Link href={rosterHref(filter, page.page + 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
+              <Link href={rosterHref(courseId, filter, page.page + 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
                 다음
               </Link>
             ) : (

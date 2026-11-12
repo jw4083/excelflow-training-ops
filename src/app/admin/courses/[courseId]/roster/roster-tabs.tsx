@@ -3,15 +3,15 @@ import Link from "next/link";
 import { ROSTER_FILTERS, type RosterFilter } from "@/domain/roster";
 
 /** 탭·쪽 이동 주소. "전체"와 1쪽은 주소를 짧게 둔다 */
-export function rosterHref(filter: RosterFilter, page = 1): string {
+export function rosterHref(courseId: string, filter: RosterFilter, page = 1): string {
   const query = new URLSearchParams();
   if (filter !== "전체") query.set("status", filter);
   if (page > 1) query.set("page", String(page));
   const text = query.toString();
-  return text ? `/admin/roster?${text}` : "/admin/roster";
+  return text ? `/admin/courses/${courseId}/roster?${text}` : `/admin/courses/${courseId}/roster`;
 }
 
-export function RosterTabs({ active, counts }: { active: RosterFilter; counts: Record<RosterFilter, number> }) {
+export function RosterTabs({ active, counts, courseId }: { active: RosterFilter; counts: Record<RosterFilter, number>; courseId: string }) {
   return (
     <nav aria-label="상태별 보기" className="flex gap-1 overflow-x-auto border-b border-zinc-200 pb-2 dark:border-zinc-800">
       {ROSTER_FILTERS.map((filter) => {
@@ -19,7 +19,7 @@ export function RosterTabs({ active, counts }: { active: RosterFilter; counts: R
         return (
           <Link
             key={filter}
-            href={rosterHref(filter)}
+            href={rosterHref(courseId, filter)}
             aria-current={isActive ? "page" : undefined}
             className={`flex h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
               isActive

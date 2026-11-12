@@ -10,7 +10,7 @@ import {
   loginTrainee,
 } from "@/lib/auth";
 import { TRAINEE_PATH } from "@/lib/paths";
-import { getStore } from "@/store";
+import { getCatalog } from "@/store";
 
 export interface TraineeLoginState {
   empNo: string; // 틀려도 사번은 다시 채워 둔다 (비밀번호는 절대 되돌려 주지 않는다)
@@ -22,7 +22,7 @@ export async function loginTraineeAction(_prev: TraineeLoginState, formData: For
   const empNo = String(formData.get("empNo") ?? "");
   const password = String(formData.get("password") ?? "");
 
-  const result = await loginTrainee(getStore(), { empNo, password });
+  const result = await loginTrainee(getCatalog(), { empNo, password });
   if (!result.ok) return { empNo, error: result.message };
 
   (await cookies()).set(TRAINEE_COOKIE, createTraineeToken(result.empNo), {

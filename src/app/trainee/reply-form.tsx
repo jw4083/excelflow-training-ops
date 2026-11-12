@@ -42,8 +42,10 @@ export function ReplyForm({
   onSubmitAction = submitReplyAction,
   submitLabel,
   mode = "full",
+  courseId,
 }: {
   defaults: ReplyDefaults;
+  courseId?: string; // 교육생 본인 제출일 때: 어느 과정의 회신인지 (서버가 이 사번이 그 과정에 등록돼 있는지 다시 확인한다)
   onSubmitAction?: (prev: ReplyFormState, formData: FormData) => Promise<ReplyFormState>;
   submitLabel?: string;
   mode?: "full" | "cancelOnly";
@@ -81,6 +83,7 @@ export function ReplyForm({
       className="flex flex-col gap-4"
       noValidate
     >
+      {courseId && <input type="hidden" name="courseId" value={courseId} />}
       {/* 회신 완료(교육생 본인 화면): 캠코 마스코트 보따와 함께 접수 사실을 알려 준다. 담당자 대신 입력 화면에서는 글자만 보인다 */}
       {celebrate && (state.ok || defaults.submittedAt) ? (
         <div role="status" className="flex items-center gap-3 rounded-card bg-primary-soft p-4">

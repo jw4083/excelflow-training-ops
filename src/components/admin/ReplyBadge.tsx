@@ -1,8 +1,8 @@
 // "회신 현황" 메뉴 옆의 빨간 숫자 표시: 충원이 필요한 자리 수 (0이면 아무것도 보이지 않음). PRD M2-9
 import { getAdminSummary } from "@/lib/adminData";
 
-export async function ReplyBadge() {
-  const { alert } = await getAdminSummary();
+export async function ReplyBadge({ courseId }: { courseId: string }) {
+  const { alert } = await getAdminSummary(courseId);
   if (alert.total === 0) return null;
 
   return (

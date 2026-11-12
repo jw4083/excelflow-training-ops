@@ -1,6 +1,7 @@
 "use client";
 // 추첨 입력 양식 (DESIGN 2.3 "추첨"): 선발 인원(정원), 대기 인원, (선택) 새 선정자 회신 기한 + 추첨 실행 버튼.
 // 입력하는 동안 "이번에 뽑는 인원 = 정원 − 현재 선정 수"를 미리 계산해 보여 주고, 0 이하이면 버튼을 막는다.
+import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, useState, type ReactNode } from "react";
 import { runDrawAction, type DrawState } from "@/app/actions/draw";
 import { MAX_DRAW_SEATS, type DrawFormField } from "@/domain/draw";
@@ -62,6 +63,7 @@ export function DrawForm({
       }}
       className="flex flex-col gap-5"
     >
+      <CourseIdField />
       <p className="text-base text-zinc-700 dark:text-zinc-300">
         추첨 대상: <strong>{poolLabel}</strong>
       </p>

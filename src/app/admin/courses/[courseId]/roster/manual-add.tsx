@@ -1,6 +1,7 @@
 "use client";
 // "수기 추가" 창 (PLAN 작업 21, DESIGN 2.3 "명단"): 사번·이름·부서·추가 사유, 회신 기한(기본 3일 후), 대신할 불참·제외 자리(선택).
 // 사번 칸은 글자 입력 칸이다(앞자리 0 보존). 정원을 넘게 되면 경고 뒤 "정원 초과 추가"로만 진행된다.
+import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, useState } from "react";
 import { addManualAction, type ManualAddState } from "@/app/actions/manualAdd";
 
@@ -56,6 +57,7 @@ export function ManualAdd({
           action={action}
           className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800"
         >
+      <CourseIdField />
           <p className="text-base text-zinc-700 dark:text-zinc-300">선정 이후에 직접 명단에 넣습니다. 추가된 사람은 &quot;선정&quot;과 &quot;수기&quot; 표시가 붙습니다.</p>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="flex flex-col gap-1">

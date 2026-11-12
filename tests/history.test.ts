@@ -263,7 +263,6 @@ describe("작업 6: 변경 이력 기록 함수", () => {
       manualReason: "추가 요청",
       selectedVia: "수기",
       replyDeadline: COURSE_DEADLINE_OK,
-      loginFails: 0,
     });
     expect(all.history[0]).toMatchObject({ kind: "수기추가", before: null });
     expect(all.history[0].traineeId).toBe(all.trainees[0].id);

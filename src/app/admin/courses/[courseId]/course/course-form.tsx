@@ -1,5 +1,6 @@
 "use client";
 // 과정 정보 입력 양식 (DESIGN 2.3): 과정명, 일정(시작일·시작 시각·종료일), 장소, 안내문, 회신 기한, 참석 취소 마감 + 저장 버튼 + 최종 수정 일시
+import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, type ReactNode } from "react";
 import { saveCourse, type CourseFormState } from "@/app/actions/course";
 import type { CourseFormField } from "@/domain/course";
@@ -36,8 +37,16 @@ function Field({
   );
 }
 
-export function CourseForm({ initial }: { initial: CourseFormState }) {
-  const [state, formAction, pending] = useActionState(saveCourse, initial);
+export function CourseForm({
+  initial,
+  action = saveCourse,
+  submitLabel = "저장",
+}: {
+  initial: CourseFormState;
+  action?: (prev: CourseFormState, formData: FormData) => Promise<CourseFormState>;
+  submitLabel?: string;
+}) {
+  const [state, formAction, pending] = useActionState(action, initial);
   const e = state.errors ?? {};
   const v = state.values;
   const aria = (name: CourseFormField) => ({
@@ -47,6 +56,7 @@ export function CourseForm({ initial }: { initial: CourseFormState }) {
 
   return (
     <form action={formAction} className="flex flex-col gap-5" noValidate>
+      <CourseIdField />
       <Field name="name" label="과정명" error={e.name}>
         <input id="name" name="name" type="text" defaultValue={v.name} maxLength={100} className={inputClass} {...aria("name")} />
       </Field>
@@ -102,7 +112,7 @@ export function CourseForm({ initial }: { initial: CourseFormState }) {
           disabled={pending}
           className="h-12 rounded-lg bg-primary px-8 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
-          {pending ? "저장 중…" : "저장"}
+          {pending ? "저장 중…" : submitLabel}
         </button>
         {state.message && (
           <p

@@ -8,8 +8,8 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { connection } from "next/server";
 import { LOCK_MINUTES, MAX_LOGIN_FAILS, decideLogin, parseLoginEmpNo } from "@/domain/login";
-import { EMP_NO_PATTERN, type Trainee } from "@/domain/types";
-import type { Store } from "@/store";
+import { EMP_NO_PATTERN } from "@/domain/types";
+import type { Catalog, LoginRecord } from "@/store";
 
 export const ADMIN_COOKIE = "admin_session";
 /** 담당자 로그인 유지 시간: 8시간 (DESIGN 4.6) */
@@ -174,24 +174,6 @@ export type TraineeLoginResult =
   | { ok: true; empNo: string; name: string }
   | { ok: false; reason: "format" | "invalid" | "locked" | "unconfigured"; message: string };
 
-// 로그인 시도는 한 번에 하나씩 순서대로 처리한다. 동시에 여러 개를 보내 실패 횟수가 덜 세어지는 틈으로 잠금을 피하는 것을 막는다.
-// (지금의 파일 저장 기준이다. 데이터베이스로 바꾸면 그 저장소의 원자적 갱신 방식에 맞게 다시 다듬어야 한다)
-const globalForLogin = globalThis as unknown as { __traineeLoginQueue?: Promise<unknown> };
-function serialize<T>(task: () => Promise<T>): Promise<T> {
-  const previous = globalForLogin.__traineeLoginQueue ?? Promise.resolve();
-  const run = previous.then(task, task);
-  globalForLogin.__traineeLoginQueue = run.catch(() => undefined);
-  return run;
-}
-
-/** 로그인 시도 결과를 교육생에게 저장한다. 로그인 시도는 명단의 변경이 아니므로 updatedAt은 바꾸지 않는다 */
-async function saveLoginRecord(store: Store, trainee: Trainee, update: { loginFails: number; lockedUntil?: string }) {
-  const next: Trainee = { ...trainee, loginFails: update.loginFails };
-  if (update.lockedUntil) next.lockedUntil = update.lockedUntil;
-  else delete next.lockedUntil;
-  await store.commit({ upsertTrainees: [next] });
-}
-
 /**
  * 교육생 로그인 확인.
  *  - 사번이 숫자 6자리가 아니면 조회 없이 바로 거부하고 실패 횟수에 세지 않는다.
@@ -201,7 +183,7 @@ async function saveLoginRecord(store: Store, trainee: Trainee, update: { loginFa
  *  - 5회 연속 틀리면 15분 잠금 (규칙은 domain/login.ts). 명단에 있으면 상태(신청·선정·제외 등)와 상관없이 로그인할 수 있다.
  */
 export async function loginTrainee(
-  store: Store,
+  catalog: Catalog,
   input: { empNo: string; password: string },
   now: string = new Date().toISOString(),
 ): Promise<TraineeLoginResult> {
@@ -209,33 +191,28 @@ export async function loginTrainee(
   const parsed = parseLoginEmpNo(input.empNo);
   if (!parsed.ok) return { ok: false, reason: "format", message: TRAINEE_LOGIN_MESSAGES.format };
 
-  return serialize(async (): Promise<TraineeLoginResult> => {
-    const trainee = await store.getTraineeByEmpNo(parsed.empNo);
-    const passwordOk = checkTraineePassword(input.password); // 없는 사번이어도 비교는 한다
-    const decision = decideLogin(trainee, passwordOk, now);
+  // 이 사번이 (보관되지 않은) 과정 어딘가에 등록돼 있는가. 어느 과정에도 없으면 "없는 사번"과 똑같이 거부한다
+  const enrollments = await catalog.findEnrollments(parsed.empNo);
+  const passwordOk = checkTraineePassword(input.password); // 없는 사번이어도 비교는 한다
+  const name = enrollments[0]?.trainee.name ?? "";
 
-    // 실패: 어떤 이유든 같은 문구 + 저장소 쓰기 한 번. reason은 검사·기록용이며 화면에는 보이지 않는다
-    if (decision.kind === "locked") {
-      await store.commit({}); // 잠긴 사번은 바꿀 기록이 없지만, 다른 실패와 같은 일을 해서 응답 시간 차이를 없앤다
-      return { ok: false, reason: "locked", message: TRAINEE_LOGIN_MESSAGES.failed };
+  // 실패 기록은 사번 하나에 하나: 읽고 → 판단 → 저장을 한 덩어리로 (동시에 여러 번 시도해도 횟수가 덜 세어지지 않는다)
+  return catalog.loginAttempts.update(parsed.empNo, (current): { next: LoginRecord | null; result: TraineeLoginResult } => {
+    const known = enrollments.length > 0;
+    const decision = decideLogin(known ? (current ?? { fails: 0 }) : null, passwordOk, now);
+    const failed: TraineeLoginResult = { ok: false, reason: "invalid", message: TRAINEE_LOGIN_MESSAGES.failed };
+
+    // 잠금 중: 비밀번호가 맞아도 거부, 기록은 그대로. 문구는 다른 실패와 같다 (잠금 여부를 알려주지 않는다)
+    if (decision.kind === "locked") return { next: current, result: { ...failed, reason: "locked" } };
+
+    if (decision.kind === "invalid") {
+      if (!decision.update) return { next: null, result: failed }; // 등록되지 않은 사번: 기록할 곳이 없다 (기록을 만들지 않는다)
+      const next: LoginRecord = { fails: decision.update.fails, ...(decision.update.lockedUntil ? { lockedUntil: decision.update.lockedUntil } : {}) };
+      // 이번 시도로 잠금이 걸렸어도 문구는 다른 실패와 같다
+      return { next, result: { ...failed, reason: decision.update.lockedUntil ? "locked" : "invalid" } };
     }
 
-    if (decision.kind === "invalid" || !trainee) {
-      if (trainee && decision.kind === "invalid" && decision.update) {
-        await saveLoginRecord(store, trainee, decision.update);
-        // 이번 시도로 잠금이 걸렸어도 문구는 다른 실패와 같다 (잠금 여부를 알려주지 않는다)
-        return {
-          ok: false,
-          reason: decision.update.lockedUntil ? "locked" : "invalid",
-          message: TRAINEE_LOGIN_MESSAGES.failed,
-        };
-      }
-      await store.commit({}); // 명단에 없는 사번: 기록할 곳이 없지만 같은 일을 한다
-      return { ok: false, reason: "invalid", message: TRAINEE_LOGIN_MESSAGES.failed };
-    }
-
-    // 성공: 이전 실패 기록이 남아 있으면 지운다 (깨끗하면 저장하지 않는다)
-    if (trainee.loginFails !== 0 || trainee.lockedUntil) await saveLoginRecord(store, trainee, { loginFails: 0 });
-    return { ok: true, empNo: trainee.empNo, name: trainee.name };
+    // 성공: 이전 실패 기록이 있으면 지운다
+    return { next: null, result: { ok: true, empNo: parsed.empNo, name } };
   });
 }

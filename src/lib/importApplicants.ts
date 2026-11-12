@@ -47,7 +47,6 @@ async function importApplicantsUnlocked(
     dept: row.dept,
     status: "신청",
     isManual: false,
-    loginFails: 0,
     createdAt: now,
     updatedAt: now,
   }));
