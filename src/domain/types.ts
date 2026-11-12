@@ -116,7 +116,7 @@ export interface Reply {
 
 // ───────────────────────── 변경 이력 ─────────────────────────
 
-/** 변경 이력의 종류 10가지 ("참석취소" = 참석으로 회신한 뒤 불참으로 바꿈) */
+/** 변경 이력의 종류 11가지 ("참석취소" = 참석으로 회신한 뒤 불참으로 바꿈) */
 export const HISTORY_KINDS = [
   "추첨",
   "선정",
@@ -128,6 +128,7 @@ export const HISTORY_KINDS = [
   "회신",
   "회신대리입력",
   "참석취소",
+  "명단초기화", // 과정의 명단·회신·이력을 모두 비움. 초기화 뒤 이력에 남는 유일한 기록(몇 명을 지웠는지)
 ] as const;
 export type HistoryKind = (typeof HISTORY_KINDS)[number];
 
@@ -146,6 +147,24 @@ export interface History {
   actor?: HistoryActor; // 회신·참석 취소 이력에만 남긴다. 예전 이력에는 없어서 종류로 추정한다 (historyView.actorOf)
 }
 
+// ───────────────────────── 회신 알림 ─────────────────────────
+
+/**
+ * 교육생이 직접 회신(또는 회신 변경)했을 때 담당자에게 쌓이는 알림. 과정 데이터 안에 함께 저장되므로 과정끼리 섞이지 않는다.
+ * 회신 한 번(=변경 이력 한 건)에 알림 한 건만 만들어지고(id가 같으면 저장을 거부), 같은 내용을 다시 제출하면 만들지 않는다.
+ * 담당자의 대리 입력은 담당자가 한 일이므로 알림을 만들지 않는다.
+ */
+export interface ReplyNotice {
+  id: string;
+  traineeId: string;
+  at: string; // 회신 일시
+  attend: boolean; // 이번 회신이 참석(true)인가 불참(false)인가
+  change: "신규" | "변경"; // 첫 회신 / 기존 응답을 바꿈
+  before: Record<string, unknown> | null; // 바뀐 항목의 변경 전 값 (신규면 null)
+  after: Record<string, unknown>; // 바뀐 항목의 변경 후 값 (신규면 회신 내용 전체)
+  readAt?: string; // 담당자가 확인한 일시. 없으면 읽지 않음
+}
+
 // ───────────────────────── 저장되는 전체 모양 ─────────────────────────
 
 /**
@@ -161,4 +180,5 @@ export interface DbData {
   draws: DrawRecord[];
   replies: Reply[];
   history: History[];
+  notices?: ReplyNotice[]; // 회신 알림. 예전 데이터에는 없다
 }

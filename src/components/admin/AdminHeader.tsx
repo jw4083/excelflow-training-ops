@@ -1,7 +1,9 @@
 // 담당자 화면 제목줄 (DESIGN 2.2): 앱 이름(누르면 과정 목록), 오른쪽에 "교육생 주소 복사"(작업 15)와 로그아웃 버튼.
 import { logoutAdmin } from "@/app/actions/auth";
 import Link from "next/link";
+import { Suspense } from "react";
 import { CopyTraineeUrlButton } from "./CopyTraineeUrlButton";
+import { NoticeBell } from "./NoticeBell";
 
 export function AdminHeader() {
   return (
@@ -14,6 +16,9 @@ export function AdminHeader() {
           <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">교육 과정 관리</p>
         </div>
         <div className="flex shrink-0 items-start gap-2">
+          <Suspense fallback={null}>
+            <NoticeBell />
+          </Suspense>
           <CopyTraineeUrlButton />
           <form action={logoutAdmin}>
             <button

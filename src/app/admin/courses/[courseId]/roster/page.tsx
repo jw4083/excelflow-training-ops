@@ -7,7 +7,9 @@ import { countByStatus, paginate, parseFilter, parsePage, visibleTrainees } from
 import { defaultFillDeadline, fillExceedsCapacity, openVacancies } from "@/domain/fill";
 import { courseBase, openAdminCourse } from "@/lib/adminCourse";
 import { isoToKstLocal } from "@/lib/datetime";
+import { resetScope } from "@/lib/rosterReset";
 import { CapacitySummaryBar } from "./capacity-summary";
+import { ResetPanel } from "./reset-panel";
 import { ManualAdd } from "./manual-add";
 import { RosterTable } from "./roster-table";
 import { RosterTabs } from "./roster-tabs";
@@ -70,6 +72,8 @@ async function RosterContent({ params, searchParams }: { params: Params; searchP
       <RosterTabs active={filter} counts={counts} courseId={courseId} />
       {filter === "신청" && <SelectionToolbar empty={page.total === 0} />}
       <RosterTable page={page} filter={filter} replies={replies} canCancelSelection={data.draws.length === 0} courseId={courseId} />
+
+      <ResetPanel scope={resetScope(data)} exportHref={`${courseBase(courseId)}/export`} archived={Boolean(data.archivedAt)} />
     </main>
   );
 }

@@ -18,6 +18,7 @@ const KIND_STYLE: Record<History["kind"], string> = {
   회신: "bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200",
   회신대리입력: "bg-orange-100 text-orange-900 dark:bg-orange-900 dark:text-orange-100",
   참석취소: "bg-rose-100 text-rose-900 dark:bg-rose-900 dark:text-rose-100",
+  명단초기화: "bg-red-700 text-white",
 };
 
 function Lines({ lines }: { lines: string[] }) {

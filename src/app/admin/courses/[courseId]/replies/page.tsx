@@ -22,7 +22,7 @@ import { courseBase, openAdminCourse } from "@/lib/adminCourse";
 import { FillPanel, type PanelCandidates } from "./fill-panel";
 
 type Params = Promise<{ courseId: string }>;
-type SearchParams = Promise<{ filter?: string | string[]; open?: string | string[]; filled?: string | string[] }>;
+type SearchParams = Promise<{ filter?: string | string[]; open?: string | string[]; filled?: string | string[]; trainee?: string | string[] }>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 const toPerson = (t: Trainee) => ({ id: t.id, name: t.name, dept: t.dept, empNo: t.empNo, waitNo: t.waitNo });
 
@@ -42,6 +42,7 @@ async function RepliesContent({ params, searchParams }: { params: Params; search
   const filter = parseReplyFilter(query.filter);
   const openId = first(query.open);
   const filledId = first(query.filled);
+  const focusId = first(query.trainee); // 알림에서 눌러 들어온 교육생 (카드를 강조한다)
   const data = await store.readAll();
   const nowIso = new Date().toISOString();
   const rows = buildReplyRows(data.trainees, data.replies, data.course, nowIso);
@@ -134,7 +135,7 @@ async function RepliesContent({ params, searchParams }: { params: Params; search
       ) : (
         <ul className="flex flex-col gap-3">
           {shown.map((row) => (
-            <ReplyCard key={row.trainee.id} row={row} courseId={courseId} />
+            <ReplyCard key={row.trainee.id} row={row} courseId={courseId} focused={row.trainee.id === focusId} />
           ))}
         </ul>
       )}
@@ -149,10 +150,13 @@ const KIND_STYLE = {
   미회신: "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100",
 } as const;
 
-function ReplyCard({ row, courseId }: { row: ReplyRow; courseId: string }) {
+function ReplyCard({ row, courseId, focused }: { row: ReplyRow; courseId: string; focused?: boolean }) {
   const { trainee, reply, kind, deadline, cancelled, newCancel } = row;
   return (
-    <li className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800">
+    <li
+      id={`trainee-${trainee.id}`}
+      className={`flex scroll-mt-4 flex-col gap-3 rounded-2xl border bg-white p-4 dark:border-zinc-800 ${focused ? "border-primary ring-2 ring-primary" : "border-zinc-200"}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-lg font-bold">{trainee.name}</p>
         <p className="text-base text-zinc-600 dark:text-zinc-400">

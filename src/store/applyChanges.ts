@@ -26,6 +26,17 @@ export function applyChanges(current: DbData, changes: StoreChanges): DbData {
   }
   if (changes.archivedAt !== undefined) data.archivedAt = changes.archivedAt;
 
+  // 명단 초기화: 이 과정의 명단 관련 데이터를 먼저 비운다 (과정 정보는 남기되 추첨으로 정해진 정원은 지운다). 다른 과정은 이 저장소 밖이라 영향이 없다
+  if (changes.resetRoster) {
+    data.trainees = [];
+    data.selections = [];
+    data.draws = [];
+    data.replies = [];
+    data.history = [];
+    data.notices = [];
+    if (data.course) delete data.course.capacity;
+  }
+
   if (changes.course) data.course = structuredClone(changes.course);
 
   // 교육생: 있으면 수정, 없으면 추가. 지우는 방법은 없다 (PRD M1-7)
@@ -61,13 +72,23 @@ export function applyChanges(current: DbData, changes: StoreChanges): DbData {
   appendOnly(data.draws, changes.appendDraws, "추첨 기록");
   appendOnly(data.history, changes.appendHistory, "변경 이력");
 
+  // 회신 알림: 추가만 가능(같은 id 거부), 읽음 처리는 시각만 채운다 (이미 읽은 알림의 시각은 바꾸지 않는다)
+  if (changes.appendNotices?.length) {
+    data.notices ??= [];
+    appendOnly(data.notices, changes.appendNotices, "회신 알림");
+  }
+  if (changes.markNoticesRead && data.notices) {
+    const ids = new Set(changes.markNoticesRead.ids);
+    for (const n of data.notices) if (ids.has(n.id) && !n.readAt) n.readAt = changes.markNoticesRead.at;
+  }
+
   return data;
 }
 
 /** 보관 표시(archivedAt) 말고 실제 내용을 바꾸는 변경이 들어 있는가 (빈 묶음·빈 목록은 바꾸는 것이 아니다) */
 function hasContentChanges(changes: StoreChanges): boolean {
   return Object.entries(changes).some(
-    ([key, value]) => key !== "archivedAt" && value !== undefined && !(Array.isArray(value) && value.length === 0),
+    ([key, value]) => key !== "archivedAt" && key !== "markNoticesRead" && value !== undefined && !(Array.isArray(value) && value.length === 0),
   );
 }
 

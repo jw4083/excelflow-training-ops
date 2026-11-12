@@ -100,6 +100,22 @@ async function submitReplyUnlocked(
     });
   }
 
+  // 교육생 본인의 회신·변경이면 담당자 알림을 한 건 쌓는다 (대리 입력은 담당자가 한 일이라 제외, 바뀐 것이 없으면 제외 — 같은 회신의 중복 알림 방지)
+  const changed = !previous || Object.keys(diff.after).length > 0 || Object.keys(diff.before ?? {}).length > 0;
+  if (!byAdmin && changed) {
+    extra.appendNotices = [
+      {
+        id: randomUUID(),
+        traineeId,
+        at: now,
+        attend: content.attend,
+        change: previous ? "변경" : "신규",
+        before: previous ? diff.before : null,
+        after: previous ? diff.after : { ...diff.after, attend: content.attend },
+      },
+    ];
+  }
+
   const action = replyStatusAction(trainee.status, content.attend);
   let changes: StoreChanges;
   if (action) {

@@ -12,6 +12,7 @@ import type {
   DrawRecord,
   History,
   Reply,
+  ReplyNotice,
   SelectionRecord,
   Trainee,
 } from "@/domain/types";
@@ -27,6 +28,10 @@ export interface StoreChanges {
   appendSelections?: SelectionRecord[]; // 추가만 가능
   appendDraws?: DrawRecord[]; // 추가만 가능
   appendHistory?: History[]; // 추가만 가능
+  appendNotices?: ReplyNotice[]; // 회신 알림 추가 (같은 id는 거부 = 같은 회신의 알림이 두 번 생기지 않는다)
+  markNoticesRead?: { ids: string[]; at: string }; // 알림 읽음 처리. 보관된 과정에서도 할 수 있다(내용을 바꾸는 일이 아니다)
+  /** 명단 초기화: 교육생·선별·추첨·회신·알림·이력을 모두 비우고 정원을 지운다(과정 정보는 그대로). 이어서 오는 appendHistory(초기화 기록)는 비운 뒤에 추가된다 */
+  resetRoster?: true;
 }
 
 export interface Store {

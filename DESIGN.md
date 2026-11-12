@@ -55,6 +55,7 @@
 | 담당자 로그인 | `/` (첫 화면) | 담당자 | 없음 |
 | 과정 목록 | `/admin` | 담당자 | 로그인 필요 |
 | 새 과정 만들기 | `/admin/courses/new` | 담당자 | 로그인 필요 |
+| 회신 알림 | `/admin/notifications` (제목줄 "회신 알림" 버튼, 안 읽은 건수 표시) | 담당자 | 로그인 필요 |
 | 과정 정보 | `/admin/courses/[courseId]/course` | 담당자 | 로그인 필요 |
 | 명단 | `/admin/courses/[courseId]/roster` | 담당자 | 로그인 필요 |
 | 추첨 | `/admin/courses/[courseId]/draw` | 담당자 | 로그인 필요 |
