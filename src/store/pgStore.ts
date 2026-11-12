@@ -40,13 +40,14 @@ export class PgCourseStore implements Store {
   }
 
   async commit(changes: StoreChanges): Promise<void> {
-    const apply = async (tx: postgres.TransactionSql) => {
-      const next = applyChanges(await this.load(tx, true), changes); // 규칙 위반이면 여기서 던져지고 아무것도 저장되지 않는다
+    const apply = async (tx: postgres.TransactionSql, alreadyLocked: boolean) => {
+      // transaction() 안에서는 그 행을 이미 잠갔으므로 다시 잠그며 읽지 않는다 (DB 왕복 1번 절약)
+      const next = applyChanges(await this.load(tx, !alreadyLocked), changes); // 규칙 위반이면 여기서 던져지고 아무것도 저장되지 않는다
       await this.save(tx, next);
     };
     const inside = this.current.getStore();
-    if (inside) return apply(inside);
-    await this.sql.begin(apply);
+    if (inside) return apply(inside, true);
+    await this.sql.begin((tx) => apply(tx, false));
   }
 
   transaction<T>(work: () => Promise<T>): Promise<T> {

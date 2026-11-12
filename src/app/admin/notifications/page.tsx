@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { markAllReadAction, openNoticeAction } from "@/app/actions/notices";
 import { describeChange } from "@/domain/historyView";
+import { listCoursesForRender } from "@/lib/adminCourse";
 import { requireAdmin } from "@/lib/auth";
 import { formatKst } from "@/lib/datetime";
 import { listNotices, summarizeNotices, type NoticeItem } from "@/lib/notices";
@@ -20,7 +21,7 @@ export default function NotificationsPage() {
 async function NotificationsContent() {
   await requireAdmin();
   await connection();
-  const items = await listNotices(getCatalog());
+  const items = await listNotices(getCatalog(), listCoursesForRender);
   const s = summarizeNotices(items);
   // 안 읽은 알림이 있는 과정(모두 읽음 버튼용)
   const unreadCourses = [...new Map(items.filter((i) => !i.notice.readAt).map((i) => [i.courseId, i.courseName])).entries()];

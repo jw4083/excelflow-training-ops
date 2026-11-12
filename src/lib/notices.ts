@@ -1,6 +1,6 @@
 // 회신 알림 읽기·읽음 처리 (담당자 전용). 알림은 과정 데이터 안에 있으므로 읽을 때만 모든 과정을 훑고, 쓸 때는 그 과정의 저장소만 연다.
 import type { ReplyNotice } from "@/domain/types";
-import type { Catalog, Store } from "@/store";
+import type { Catalog, CourseEntry, Store } from "@/store";
 
 /** 알림 목록 한 줄: 어느 과정의 누구의 회신인지까지 풀어서 담는다 */
 export interface NoticeItem {
@@ -30,9 +30,9 @@ export function summarizeNotices(items: Pick<NoticeItem, "notice">[]): NoticeSum
 }
 
 /** 모든 과정의 알림을 최신순으로. 교육생 이름은 그 과정 안에서만 찾는다(없으면 "(알 수 없음)") */
-export async function listNotices(catalog: Catalog): Promise<NoticeItem[]> {
+export async function listNotices(catalog: Catalog, loadCourses: () => Promise<CourseEntry[]> = () => catalog.listCourses()): Promise<NoticeItem[]> {
   const items: NoticeItem[] = [];
-  const courses = await catalog.listCourses();
+  const courses = await loadCourses(); // 화면에서는 같은 요청 안에서 이미 읽은 목록을 넘겨 다시 읽지 않는다
   courses.forEach(({ id, data }, index) => {
     for (const notice of data.notices ?? []) {
       const trainee = data.trainees.find((t) => t.id === notice.traineeId);

@@ -5,9 +5,10 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { vacancyAlert } from "@/domain/alerts";
 import { capacitySummary } from "@/domain/capacity";
+import { listCoursesForRender } from "@/lib/adminCourse";
 import { requireAdmin } from "@/lib/auth";
 import { formatPeriodKo } from "@/lib/datetime";
-import { getCatalog, type CourseEntry } from "@/store";
+import type { CourseEntry } from "@/store";
 
 export default function AdminIndex() {
   // 로그인 확인과 저장소 읽기는 요청이 들어온 뒤에 하는 일이므로 Suspense 안에 둔다 (Cache Components 규칙)
@@ -21,7 +22,7 @@ export default function AdminIndex() {
 async function CourseList() {
   await requireAdmin();
   await connection();
-  const all = await getCatalog().listCourses();
+  const all = await listCoursesForRender(); // 알림 종과 같은 요청 안에서 한 번만 읽는다
   const active = all.filter((c) => !c.data.archivedAt);
   const archived = all.filter((c) => c.data.archivedAt);
 

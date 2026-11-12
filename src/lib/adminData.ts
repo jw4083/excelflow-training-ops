@@ -4,7 +4,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { vacancyAlert, type VacancyAlert } from "@/domain/alerts";
-import { getCatalog } from "@/store";
+import { loadCourseForRender } from "@/lib/adminCourse";
 
 export interface AdminSummary {
   courseName: string | null; // 과정 정보를 아직 입력하지 않았으면 null
@@ -19,8 +19,8 @@ export interface AdminSummary {
  */
 export const getAdminSummary = cache(async (courseId: string): Promise<AdminSummary> => {
   await connection();
-  const store = await getCatalog().openCourse(courseId);
-  if (!store) notFound();
-  const data = await store.readAll();
+  const loaded = await loadCourseForRender(courseId); // 페이지·배너·제목줄이 같은 요청 안에서 한 번만 읽는다
+  if (!loaded) notFound();
+  const { data } = loaded;
   return { courseName: data.course?.name ?? null, archived: Boolean(data.archivedAt), alert: vacancyAlert(data.trainees) };
 });

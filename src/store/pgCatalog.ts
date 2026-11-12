@@ -50,6 +50,9 @@ export class PgCatalog implements Catalog {
 
   async openCourse(courseId: string): Promise<Store | null> {
     if (!isCourseId(courseId)) return null;
+    // 과정은 지우는 기능이 없으므로, 이 서버에서 한 번 확인한 과정은 다시 DB에 묻지 않는다 (DB 왕복 1번 절약)
+    const known = this.stores.get(courseId);
+    if (known) return known;
     const rows = await this.sql`select 1 as ok from ${this.sql(this.table)} where course_id = ${courseId}`;
     return rows.length > 0 ? this.storeOf(courseId) : null;
   }

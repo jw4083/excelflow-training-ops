@@ -1,12 +1,13 @@
 // 담당자 제목줄의 알림 종: 모든 과정의 안 읽은 회신 알림 수. 누르면 알림 목록으로 간다 (팝업은 띄우지 않고 목록에 쌓는다).
 import Link from "next/link";
 import { connection } from "next/server";
+import { listCoursesForRender } from "@/lib/adminCourse";
 import { listNotices, summarizeNotices } from "@/lib/notices";
 import { getCatalog } from "@/store";
 
 export async function NoticeBell() {
   await connection();
-  const s = summarizeNotices(await listNotices(getCatalog()));
+  const s = summarizeNotices(await listNotices(getCatalog(), listCoursesForRender));
   return (
     <Link
       href="/admin/notifications"
