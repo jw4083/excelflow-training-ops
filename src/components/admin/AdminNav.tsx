@@ -1,0 +1,42 @@
+"use client";
+// 담당자 화면 메뉴 (DESIGN 2.2): 큰 화면에서는 왼쪽 세로 메뉴, 휴대폰 폭에서는 위쪽 가로 메뉴.
+// 지금 보고 있는 메뉴를 강조하려고 현재 주소를 읽기 때문에 클라이언트 컴포넌트다.
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
+
+const ITEMS = [
+  { href: "/admin/course", label: "과정 정보" },
+  { href: "/admin/roster", label: "명단" },
+  { href: "/admin/draw", label: "추첨" },
+  { href: "/admin/replies", label: "회신 현황", hasBadge: true },
+  { href: "/admin/history", label: "변경 이력" },
+] as const;
+
+/** replyBadge: "회신 현황" 메뉴 옆에 붙는 충원 알림 숫자 표시 (서버에서 계산해 넘겨받는다) */
+export function AdminNav({ replyBadge }: { replyBadge: ReactNode }) {
+  const pathname = usePathname();
+
+  return (
+    <nav aria-label="담당자 메뉴" className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-visible md:p-3">
+      {ITEMS.map((item) => {
+        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-current={active ? "page" : undefined}
+            className={`flex h-11 shrink-0 items-center rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
+              active
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            }`}
+          >
+            {item.label}
+            {"hasBadge" in item && item.hasBadge ? replyBadge : null}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

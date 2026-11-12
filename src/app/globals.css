@@ -22,5 +22,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  /* 한글이 깨끗하게 보이도록 한글 글꼴을 우선 지정한다 */
+  font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", var(--font-geist-sans), Arial, sans-serif;
+  font-size: 16px; /* 휴대폰에서 글자가 너무 작아지지 않게 (PRD M2-11) */
 }

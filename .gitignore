@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# 삭제 대기 파일 (사용자가 직접 확인 후 삭제)
+/trash-can/
+
+# 개발용 저장 파일 (가짜 테스트 데이터, 커밋하지 않음)
+/data/

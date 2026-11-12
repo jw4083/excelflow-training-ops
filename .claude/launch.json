@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app-test-env",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/dev-with-test-env.mjs"],
+      "port": 3100
+    }
+  ]
+}

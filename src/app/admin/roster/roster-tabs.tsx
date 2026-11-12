@@ -1,0 +1,42 @@
+// 상태 탭 7개 (전체 + 6종)와 각 탭의 인원 수. 탭을 누르면 주소의 ?status= 값이 바뀌어 같은 화면이 다시 그려진다.
+import Link from "next/link";
+import { ROSTER_FILTERS, type RosterFilter } from "@/domain/roster";
+
+/** 탭·쪽 이동 주소. "전체"와 1쪽은 주소를 짧게 둔다 */
+export function rosterHref(filter: RosterFilter, page = 1): string {
+  const query = new URLSearchParams();
+  if (filter !== "전체") query.set("status", filter);
+  if (page > 1) query.set("page", String(page));
+  const text = query.toString();
+  return text ? `/admin/roster?${text}` : "/admin/roster";
+}
+
+export function RosterTabs({ active, counts }: { active: RosterFilter; counts: Record<RosterFilter, number> }) {
+  return (
+    <nav aria-label="상태별 보기" className="flex gap-1 overflow-x-auto border-b border-zinc-200 pb-2 dark:border-zinc-800">
+      {ROSTER_FILTERS.map((filter) => {
+        const isActive = filter === active;
+        return (
+          <Link
+            key={filter}
+            href={rosterHref(filter)}
+            aria-current={isActive ? "page" : undefined}
+            className={`flex h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
+              isActive
+                ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900"
+                : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            }`}
+          >
+            {filter}
+            <span
+              className={`text-sm tabular-nums ${isActive ? "opacity-90" : "text-zinc-500 dark:text-zinc-400"}`}
+              aria-label={`${counts[filter]}명`}
+            >
+              {counts[filter]}
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}

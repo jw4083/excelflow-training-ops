@@ -1,0 +1,30 @@
+// 충원 알림 건수 계산 (DESIGN 4.4-1, PRD M2-9).
+// "충원이 필요한 자리" = 상태가 "불참" 또는 "제외"인데 아직 충원이 확정되지 않은(`replacedBy`가 없는) 교육생.
+// 담당자 화면의 상단 배너·메뉴 배지·회신 현황 필터가 모두 이 한 곳의 계산을 쓴다.
+// 충원을 확정하거나(replacedBy가 채워짐) 불참자가 참석으로 다시 회신하면(상태가 "선정"으로 돌아감) 자동으로 건수에서 빠진다.
+import type { Trainee } from "./types";
+
+/** 배너에 이름을 보여줄 최대 인원 */
+export const ALERT_NAME_LIMIT = 3;
+
+export interface VacancyAlert {
+  total: number; // 충원이 필요한 자리 수
+  absent: number; // 그중 "불참"
+  excluded: number; // 그중 담당자가 직접 "제외"
+  names: string[]; // 오래 기다린 순으로 최대 3명의 이름 (불참 상세 사유 같은 민감 정보는 담지 않는다)
+}
+
+export function vacancyAlert(
+  trainees: Pick<Trainee, "name" | "status" | "replacedBy" | "updatedAt">[],
+): VacancyAlert {
+  const open = trainees
+    .filter((t) => (t.status === "불참" || t.status === "제외") && !t.replacedBy)
+    .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)); // 먼저 비워진(오래 기다린) 자리가 앞
+
+  return {
+    total: open.length,
+    absent: open.filter((t) => t.status === "불참").length,
+    excluded: open.filter((t) => t.status === "제외").length,
+    names: open.slice(0, ALERT_NAME_LIMIT).map((t) => t.name),
+  };
+}

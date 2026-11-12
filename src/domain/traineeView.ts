@@ -1,0 +1,103 @@
+// 교육생 화면에 보여줄 내용을 정하는 규칙 (PLAN 작업 17, PRD M2-1·M2-5·M2-7, DESIGN 2.3 "교육생 화면"). 화면·저장소를 모르는 순수 코드.
+// 입력은 "로그인한 본인 1명"과 과정 정보뿐이다. 다른 교육생의 정보는 이 함수가 받지도 않으므로 결과에 섞일 수 없다.
+import { formatKst } from "@/lib/datetime";
+import type { Course, Status, Trainee } from "./types";
+
+/** 상태 안내의 분위기 (화면의 색·아이콘을 고르는 데만 쓴다. 색만으로 구분하지 않고 항상 글로도 설명한다) */
+export type StatusTone = "good" | "wait" | "neutral" | "bad";
+
+export interface StatusMessage {
+  tone: StatusTone;
+  title: string; // 한 줄 결과 (예: "교육 대상자로 선정되었습니다")
+  detail: string; // 쉬운 풀이와 앞으로 할 일
+}
+
+/**
+ * 내 상태를 교육생이 이해하기 쉬운 말로 바꾼다 (DESIGN 2.3).
+ * - 대기는 본인의 대기 순번만 알려 준다. 다른 사람의 순번·이름은 알 수 없다.
+ * - 충원이 확정된 불참자(`replacedBy`가 있음)는 참석으로 바꿀 수 없다고 안내한다 (PRD M2-7). 누구로 충원됐는지는 보여주지 않는다.
+ */
+export function describeMyStatus(
+  trainee: Pick<Trainee, "status" | "waitNo" | "replacedBy">,
+): StatusMessage {
+  switch (trainee.status) {
+    case "신청":
+      return {
+        tone: "neutral",
+        title: "신청이 접수되었습니다",
+        detail: "선정 결과를 기다려 주세요. 결과가 나오면 이 화면에서 확인할 수 있습니다.",
+      };
+    case "선정":
+      return {
+        tone: "good",
+        title: "교육 대상자로 선정되었습니다",
+        detail: "아래 「회신」에서 회신 기한 안에 참석 여부를 알려 주세요.",
+      };
+    case "대기":
+      return {
+        tone: "wait",
+        title: trainee.waitNo ? `대기 ${trainee.waitNo}번입니다` : "대기자로 등록되었습니다",
+        detail: "선정된 분 중에 참석하지 못하는 분이 생기면 대기 순번대로 안내드립니다. 이 화면에서 결과를 확인해 주세요.",
+      };
+    case "미선정":
+      return {
+        tone: "neutral",
+        title: "이번 교육에는 선정되지 않았습니다",
+        detail: "궁금한 점은 교육 담당자에게 문의해 주세요.",
+      };
+    case "불참":
+      return trainee.replacedBy
+        ? {
+            tone: "bad",
+            title: "불참으로 처리되었고 자리가 충원되었습니다",
+            detail: "이미 충원되어 참석으로 바꿀 수 없습니다. 담당자에게 문의해 주세요.",
+          }
+        : {
+            tone: "bad",
+            title: "불참으로 처리되어 있습니다",
+            detail: "참석할 수 있게 되었다면 회신 기한 안에 다시 회신해 주세요.",
+          };
+    case "제외":
+      return {
+        tone: "bad",
+        title: "교육 명단에서 제외되었습니다",
+        detail: "궁금한 점은 교육 담당자에게 문의해 주세요.",
+      };
+  }
+}
+
+/** 회신을 할 수 있는(해야 하는) 상태: 선정, 그리고 불참으로 회신한 사람(기한 전이면 다시 참석으로 바꿀 수 있다) */
+export function hasReplySection(status: Status): boolean {
+  return status === "선정" || status === "불참";
+}
+
+export interface DeadlineView {
+  iso: string;
+  text: string; // "2026-11-20 18:00"
+  passed: boolean; // 지금 기준으로 기한이 지났는가
+  personal: boolean; // 개별 기한인가 (아니면 과정 전체 기한)
+}
+
+/**
+ * 이 교육생에게 적용되는 회신 기한: 개별 기한이 있으면 그것, 없으면 과정 기한 (PRD M1-11, M2-4).
+ * 기한을 알 수 없으면(과정 정보 미입력) null.
+ */
+export function replyDeadlineFor(
+  trainee: Pick<Trainee, "replyDeadline">,
+  course: Pick<Course, "replyDeadline"> | null,
+  now: string,
+): DeadlineView | null {
+  const iso = trainee.replyDeadline ?? course?.replyDeadline;
+  if (!iso || Number.isNaN(Date.parse(iso))) return null;
+  return {
+    iso,
+    text: formatKst(iso),
+    passed: Date.parse(now) > Date.parse(iso),
+    personal: trainee.replyDeadline !== undefined,
+  };
+}
+
+/** 맨 위에 보여줄 "최종 수정 일시" (PRD M2-5): 교육 안내(과정 정보)를 마지막으로 고친 시각. 아직 없으면 null */
+export function lastUpdatedText(course: Pick<Course, "updatedAt"> | null): string | null {
+  return course ? formatKst(course.updatedAt) : null;
+}
