@@ -34,25 +34,28 @@ export async function saveCourse(_prev: CourseFormState, formData: FormData): Pr
   };
 
   const store = getStore();
-  const current = await store.getCourse();
-  const updatedAtText = current ? formatKst(current.updatedAt) : null;
+  // 과정 정보를 읽고 → 검사하고 → 저장하는 동안 추첨(정원 저장) 등 다른 변경이 끼어들지 않게 한 덩어리로 실행한다
+  return store.transaction(async () => {
+    const current = await store.getCourse();
+    const updatedAtText = current ? formatKst(current.updatedAt) : null;
 
-  const parsed = parseCourseForm(raw);
-  if (!parsed.ok) {
-    return { values: raw, errors: parsed.errors, status: "error", message: "입력한 내용을 확인해 주세요.", updatedAtText };
-  }
+    const parsed = parseCourseForm(raw);
+    if (!parsed.ok) {
+      return { values: raw, errors: parsed.errors, status: "error", message: "입력한 내용을 확인해 주세요.", updatedAtText };
+    }
 
-  const { course, changed } = buildCourse(parsed.values, current, new Date().toISOString());
-  if (!changed) {
-    return { values: parsed.values, status: "unchanged", message: "바뀐 내용이 없어 저장하지 않았습니다.", updatedAtText };
-  }
+    const { course, changed } = buildCourse(parsed.values, current, new Date().toISOString());
+    if (!changed) {
+      return { values: parsed.values, status: "unchanged", message: "바뀐 내용이 없어 저장하지 않았습니다.", updatedAtText };
+    }
 
-  await store.commit({ course });
-  revalidatePath("/admin", "layout"); // 제목줄의 과정 이름 등 공통 틀도 새 내용으로 다시 그린다
-  return {
-    values: parsed.values,
-    status: "saved",
-    message: "저장했습니다.",
-    updatedAtText: formatKst(course.updatedAt),
-  };
+    await store.commit({ course });
+    revalidatePath("/admin", "layout"); // 제목줄의 과정 이름 등 공통 틀도 새 내용으로 다시 그린다
+    return {
+      values: parsed.values,
+      status: "saved",
+      message: "저장했습니다.",
+      updatedAtText: formatKst(course.updatedAt),
+    };
+  });
 }

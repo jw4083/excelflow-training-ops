@@ -41,6 +41,13 @@ export interface Store {
   getReply(traineeId: string): Promise<Reply | null>;
   /** 변경 묶음을 저장한다. 규칙에 어긋나면 `StoreError`를 던지고 아무것도 저장하지 않는다. */
   commit(changes: StoreChanges): Promise<void>;
+  /**
+   * "읽고 → 규칙 검사 → 저장"을 한 덩어리로 실행한다. 같은 저장소의 다른 transaction은 이 덩어리가 끝난 뒤에 시작하므로,
+   * 거의 동시에 온 두 요청이 같은 예전 내용을 읽고 서로를 덮어쓰는 일이 없다 (예: 재회신과 충원 확정이 겹침).
+   * transaction 안에서 다시 transaction을 불러도 멈추지 않고 그대로 이어서 실행된다.
+   * 값을 바꾸는 기능은 읽기부터 저장까지를 반드시 이 안에서 한다. (읽기만 하는 화면은 쓰지 않아도 된다)
+   */
+  transaction<T>(work: () => Promise<T>): Promise<T>;
 }
 
 /**

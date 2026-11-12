@@ -21,7 +21,7 @@ export type ManualAddResult =
   | { ok: true; traineeId: string }
   | { ok: false; reason: string; needsOverConfirm?: boolean };
 
-export async function addManualTrainee(store: Store, input: ManualAddInput, options: ChangeOptions = {}): Promise<ManualAddResult> {
+async function addManualTraineeUnlocked(store: Store, input: ManualAddInput, options: ChangeOptions = {}): Promise<ManualAddResult> {
   const now = options.now ?? new Date().toISOString();
   const data = await store.readAll();
 
@@ -72,4 +72,9 @@ export async function addManualTrainee(store: Store, input: ManualAddInput, opti
 
   const result = await changeStatuses(store, inputs, {}, { ...options, now, newId });
   return result.ok ? { ok: true, traineeId: newTraineeId } : { ok: false, reason: result.reason };
+}
+
+/** 수기 추가: 읽기 → 사번 중복·정원 검사 → 저장을 한 덩어리(transaction)로 실행한다. 같은 사번이 동시에 두 번 들어가지 않는다. */
+export function addManualTrainee(store: Store, input: ManualAddInput, options: ChangeOptions = {}): Promise<ManualAddResult> {
+  return store.transaction(() => addManualTraineeUnlocked(store, input, options));
 }

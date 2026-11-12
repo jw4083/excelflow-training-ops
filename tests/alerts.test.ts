@@ -48,3 +48,17 @@ describe("작업 8: 충원이 필요한 자리 건수", () => {
     expect(Object.keys(vacancyAlert([t("불참")])).sort()).toEqual(["absent", "excluded", "names", "total"]);
   });
 });
+
+describe("배너 개수와 충원 목록은 같은 기준 (CHECK.md: 배너·필터 개수 불일치)", () => {
+  it("배너의 개수·이름은 충원이 필요한 자리 목록(openVacancies)과 항상 같다", async () => {
+    const { openVacancies } = await import("@/domain/fill");
+    const mk = (id: string, status: "불참" | "제외" | "선정", replacedBy?: string, updatedAt = "2026-11-12T00:00:00Z") =>
+      ({ id, name: `이름${id}`, status, replacedBy, updatedAt }) as never;
+    const list = [mk("a", "불참"), mk("b", "제외", undefined, "2026-11-11T00:00:00Z"), mk("c", "불참", "x"), mk("d", "선정"), mk("e", "제외")];
+    const open = openVacancies(list);
+    const alert = vacancyAlert(list);
+    expect(alert.total).toBe(open.length);
+    expect(alert.absent + alert.excluded).toBe(open.length);
+    expect(alert.names).toEqual(open.slice(0, ALERT_NAME_LIMIT).map((t: { name: string }) => t.name));
+  });
+});

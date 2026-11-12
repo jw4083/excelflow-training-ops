@@ -28,7 +28,7 @@ export async function VacancyBanner() {
         </span>
       </p>
       <Link
-        href="/admin/replies?filter=absent"
+        href="/admin/replies#vacancies"
         className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-amber-900 px-4 text-base font-semibold text-white hover:bg-amber-800 dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100"
       >
         회신 현황에서 확인

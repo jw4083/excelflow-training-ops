@@ -76,6 +76,22 @@ export interface DeadlineView {
   text: string; // "2026-11-20 18:00"
   passed: boolean; // 지금 기준으로 기한이 지났는가
   personal: boolean; // 개별 기한인가 (아니면 과정 전체 기한)
+  remaining: string; // 남은 시간을 쉬운 말로: "5일 6시간 남음", "3시간 남음", "20분 남음", 지났으면 "기한이 지났습니다"
+}
+
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
+const DAY_MS = 24 * HOUR_MS;
+
+/** 기한까지 남은 시간을 쉬운 말로 (큰 단위부터 두 단계까지만, 마지막 1분 미만은 1분으로 센다) */
+export function remainingLabel(deadlineIso: string, nowIso: string): string {
+  const ms = Date.parse(deadlineIso) - Date.parse(nowIso);
+  if (ms < 0) return "기한이 지났습니다";
+  const days = Math.floor(ms / DAY_MS);
+  const hours = Math.floor((ms % DAY_MS) / HOUR_MS);
+  if (days >= 1) return hours > 0 ? `${days}일 ${hours}시간 남음` : `${days}일 남음`;
+  if (hours >= 1) return `${hours}시간 남음`;
+  return `${Math.max(1, Math.ceil(ms / MINUTE_MS))}분 남음`;
 }
 
 /**
@@ -94,6 +110,7 @@ export function replyDeadlineFor(
     text: formatKst(iso),
     passed: Date.parse(now) > Date.parse(iso),
     personal: trainee.replyDeadline !== undefined,
+    remaining: remainingLabel(iso, now),
   };
 }
 

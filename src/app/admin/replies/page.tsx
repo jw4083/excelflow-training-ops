@@ -77,7 +77,7 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
       )}
 
       {vacancies.length > 0 && (
-        <section aria-labelledby="vacancy-title" className="flex flex-col gap-3">
+        <section id="vacancies" aria-labelledby="vacancy-title" className="flex scroll-mt-4 flex-col gap-3">
           <h2 id="vacancy-title" className="text-xl font-bold">
             충원이 필요한 자리 {vacancies.length}개
           </h2>

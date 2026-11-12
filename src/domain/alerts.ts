@@ -2,6 +2,7 @@
 // "충원이 필요한 자리" = 상태가 "불참" 또는 "제외"인데 아직 충원이 확정되지 않은(`replacedBy`가 없는) 교육생.
 // 담당자 화면의 상단 배너·메뉴 배지·회신 현황 필터가 모두 이 한 곳의 계산을 쓴다.
 // 충원을 확정하거나(replacedBy가 채워짐) 불참자가 참석으로 다시 회신하면(상태가 "선정"으로 돌아감) 자동으로 건수에서 빠진다.
+import { openVacancies } from "./fill";
 import type { Trainee } from "./types";
 
 /** 배너에 이름을 보여줄 최대 인원 */
@@ -17,9 +18,8 @@ export interface VacancyAlert {
 export function vacancyAlert(
   trainees: Pick<Trainee, "name" | "status" | "replacedBy" | "updatedAt">[],
 ): VacancyAlert {
-  const open = trainees
-    .filter((t) => (t.status === "불참" || t.status === "제외") && !t.replacedBy)
-    .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)); // 먼저 비워진(오래 기다린) 자리가 앞
+  // "충원이 필요한 자리"의 기준은 fill.ts의 openVacancies 한 곳이다. 회신 현황의 충원 목록도 같은 함수를 쓰므로 배너의 개수와 목록이 어긋나지 않는다
+  const open = openVacancies(trainees); // 먼저 비워진(오래 기다린) 자리가 앞
 
   return {
     total: open.length,

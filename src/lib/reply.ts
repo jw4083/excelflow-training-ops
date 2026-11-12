@@ -30,7 +30,7 @@ function replyDiff(before: Reply | null, after: Reply) {
   return { before: before ? b : null, after: a };
 }
 
-export async function submitReply(
+async function submitReplyUnlocked(
   store: Store,
   traineeId: string,
   input: ReplyInput,
@@ -90,4 +90,14 @@ export async function submitReply(
     throw error;
   }
   return { ok: true, reply };
+}
+
+/** 회신 제출: 읽기 → 기한·충원 확정 검사 → 저장을 한 덩어리(transaction)로 실행한다. 재회신과 충원 확정이 겹쳐도 서로를 덮어쓰지 않는다. */
+export function submitReply(
+  store: Store,
+  traineeId: string,
+  input: ReplyInput,
+  options: SubmitReplyOptions = {},
+): Promise<SubmitReplyResult> {
+  return store.transaction(() => submitReplyUnlocked(store, traineeId, input, options));
 }

@@ -130,7 +130,7 @@ describe("작업 4: 저장 창구", () => {
 
   it("저장소에는 삭제·기록 수정용 메서드가 없다 (PRD M1-4, M1-7)", () => {
     const methods = Object.getOwnPropertyNames(FileStore.prototype).filter((n) => n !== "constructor");
-    expect(methods.sort()).toEqual(["commit", "getCourse", "getReply", "getTraineeByEmpNo", "load", "readAll", "save"].sort());
+    expect(methods.sort()).toEqual(["commit", "getCourse", "getReply", "getTraineeByEmpNo", "load", "readAll", "save", "transaction"].sort());
     for (const name of methods) expect(name).not.toMatch(/delete|remove|update|clear|drop/i);
   });
 

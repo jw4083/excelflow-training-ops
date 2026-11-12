@@ -19,7 +19,7 @@ export function fillCandidates(trainees: Trainee[]): FillCandidates {
 }
 
 /** 충원이 필요한 자리 목록: 오래 기다린 순 */
-export function openVacancies(trainees: Trainee[]): Trainee[] {
+export function openVacancies<T extends Pick<Trainee, "status" | "replacedBy" | "updatedAt">>(trainees: T[]): T[] {
   return trainees
     .filter((t) => (t.status === "불참" || t.status === "제외") && !t.replacedBy)
     .sort((a, b) => a.updatedAt.localeCompare(b.updatedAt));

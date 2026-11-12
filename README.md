@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 교육 운영 통합관리 앱 (excelflow)
 
-## Getting Started
+교육 운영 담당자와 교육생(내부 직원)이 **교육생 선정부터 불참·충원까지의 변경 사항을 한곳에서 관리·공유**하는 웹 앱입니다. 흩어진 엑셀·메일·카톡 대신 하나의 명단과 하나의 안내 페이지를 같이 봅니다.
 
-First, run the development server:
+> ⚠ **실습용 프로젝트입니다.** 화면과 저장 데이터는 모두 **가짜 명단**이며, 로그인은 실습용 공통 비밀번호를 씁니다. 실제 직원 정보나 사내 계정을 넣지 마세요. 배포본의 저장은 서버의 임시 폴더라 **데이터가 유지되지 않을 수 있습니다**(아래 "알려진 한계" 참고).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 무엇을 하나요
+
+**담당자 화면 (`/` 에서 비밀번호로 로그인)**
+- 과정 정보(일정·장소·안내문·회신 기한) 입력 — 저장하면 "최종 수정 일시"가 교육생 화면에 표시
+- 신청자 엑셀(`.xlsx`, 최대 1,000행) 업로드: 중복 사번 처리, 사번 6자리 검사, 앞자리 0 보존
+- 1차 선별(체크하면 바로 선정) → 2차 랜덤 추첨(정원·대기 인원, 재추첨, 기록은 수정 불가)
+- 회신 현황(참석·불참·노트북·룸메이트·미회신)과 담당자 대리 입력
+- 불참·직접 제외 → 대기 순번대로 충원 확정(정원 초과 경고, 개별 회신 기한), 수기 추가
+- 충원이 필요한 자리 알림(상단 배너·메뉴 배지, 30초마다 자동 갱신)
+- 모든 변경의 이력(일시·변경 전·변경 후) 조회, 최종 명단 엑셀 내려받기(사번은 텍스트 서식)
+
+**교육생 화면 (`/trainee`, 모든 교육생이 같은 주소)**
+- 사번 6자리 + 비밀번호로 로그인(5번 연속 틀리면 15분 잠금, 실패 사유는 항상 같은 문구)
+- 내 선정 결과와 교육 안내 확인(본인 정보만 표시), 회신 기한까지 남은 시간
+- 참석/불참(사유 10~300자), 노트북 지참, 룸메이트(이름·부서 직접 입력) 회신 제출·수정
+- 휴대폰 화면 폭(375px)에서 가로 스크롤 없이 사용
+
+## 기술
+
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS 4 · exceljs · zod · Vitest
+
+```text
+src/domain   화면·저장소를 모르는 순수 규칙(상태 전환, 정원, 추첨, 회신 검사 …)
+src/lib      로그인, 이력 기록, 충원·수기 추가 등 기능
+src/store    저장 창구(한곳에 모아 두어 나중에 DB로 교체하기 쉽게)
+src/app      담당자·교육생 화면과 서버 처리
+tests        핵심 규칙 자동 검사
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 직접 실행해 보기
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+# 프로젝트 폴더에 .env 파일을 만들어 아래 "환경 변수"를 채웁니다 (실제 값은 저장소에 올리지 않습니다)
+npm run dev            # http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+가짜 비밀번호로 바로 확인하려면:
 
-## Learn More
+```bash
+npm run dev:test       # http://localhost:3100  (담당자 test-admin-pass / 교육생 test-trainee-pass)
+```
 
-To learn more about Next.js, take a look at the following resources:
+`fixtures/applicants-30.xlsx`가 가짜 신청자 30행(고유 28명, 중복 사번 2행, 앞자리 0 사번 5개)입니다.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm test               # 핵심 규칙 자동 검사
+npm run lint
+npm run build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 환경 변수
 
-## Deploy on Vercel
+| 이름 | 용도 |
+|------|------|
+| `ADMIN_PASSWORD` | 담당자 로그인 비밀번호 |
+| `TRAINEE_TEST_PASSWORD` | 교육생 실습용 공통 비밀번호 |
+| `SESSION_SECRET` | 로그인 쿠키 서명 키(32자 이상 무작위 값) |
+| `DATA_FILE` | (선택) 저장 파일 위치. 배포 환경에서는 쓰기 가능한 임시 폴더를 가리킨다 |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+실제 값은 `.env`(저장소에 올리지 않음) 또는 배포 서비스의 환경 변수에만 둡니다.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 알려진 한계 (공개 전 점검 결과 — `CHECK.md` 참고)
+
+- **저장은 파일 하나(`data/db.json`)입니다.** Vercel 같은 서버리스 환경에서는 파일이 유지되지 않으므로, 실제 운영 전에 데이터베이스 저장소로 교체해야 합니다(교체 지점은 `src/store/index.ts`의 `getStore()` 한 곳).
+- 교육생 로그인은 **공통 비밀번호**라서 사번을 아는 사람은 다른 교육생으로 로그인할 수 있습니다. 실제 직원 데이터를 쓰기 전에 사람마다 다른 인증으로 바꿔야 합니다.
+- 담당자 로그인 시도 제한은 서버 메모리 기준입니다.
+- 사내 시스템 연동, SSO, 메일·문자·카톡 자동 발송, 여러 과정 동시 운영은 이번 범위에 포함하지 않았습니다.
+
+## 문서
+
+- [PRD.md](PRD.md) — 서비스 기획서(무엇을, 왜, 어떤 규칙으로)
+- [PLAN.md](PLAN.md) — 계획서(성공 기준과 작업 순서)
+- [DESIGN.md](DESIGN.md) — 설계서(화면·데이터·흐름·테스트 계획)
+- [CHECK.md](CHECK.md) — 설계 대비 점검·성공 기준 판정·보안 점검 결과

@@ -1,6 +1,7 @@
 // 개발용 파일 저장 구현 (PLAN 작업 4).
 // 내 컴퓨터에서 개발·확인할 때만 쓴다. data/db.json 한 파일에 전체 데이터를 JSON으로 저장한다.
 // ⚠ Vercel에서는 파일이 유지되지 않으므로, Part 5 배포 전에 데이터베이스 구현으로 교체한다 (이 파일만 바꾸면 된다).
+import { AsyncLocalStorage } from "node:async_hooks";
 import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Course, DbData, Reply, Trainee } from "@/domain/types";
@@ -11,7 +12,19 @@ export class FileStore implements Store {
   // 저장 요청을 한 줄로 세운다: 동시에 여러 요청이 와도 "읽고 → 고치고 → 쓰기"가 겹치지 않게 한다
   private queue: Promise<unknown> = Promise.resolve();
 
+  // transaction 전용 줄: "읽고 → 검사 → 저장"이 통째로 한 번에 하나씩만 실행되게 한다 (위의 queue는 개별 저장만 줄 세운다)
+  private txQueue: Promise<unknown> = Promise.resolve();
+  // 지금 실행 중인 코드가 이미 transaction 안인가 (안에서 또 부르면 줄을 서지 않고 이어서 실행해야 서로 기다리며 멈추지 않는다)
+  private readonly inTransaction = new AsyncLocalStorage<true>();
+
   constructor(private readonly filePath: string) {}
+
+  transaction<T>(work: () => Promise<T>): Promise<T> {
+    if (this.inTransaction.getStore()) return work();
+    const run = this.txQueue.catch(() => undefined).then(() => this.inTransaction.run(true, work));
+    this.txQueue = run;
+    return run;
+  }
 
   async readAll(): Promise<DbData> {
     // 대기 중인 저장이 끝난 뒤에 읽어서, 방금 저장한 내용이 반드시 보이게 한다

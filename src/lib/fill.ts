@@ -16,7 +16,7 @@ export interface FillInput {
   confirmOver?: boolean; // 정원을 넘어도 확정한다고 담당자가 확인했는가
 }
 
-export async function confirmFill(store: Store, input: FillInput, options: ChangeOptions = {}): Promise<FillResult> {
+async function confirmFillUnlocked(store: Store, input: FillInput, options: ChangeOptions = {}): Promise<FillResult> {
   const now = options.now ?? new Date().toISOString();
   const data = await store.readAll();
 
@@ -75,4 +75,9 @@ export async function excludeSelected(
   if (!text) return { ok: false, reason: "제외 사유를 입력해 주세요." };
   const result = await changeStatus(store, { action: "직접제외", traineeId, reason: text }, {}, options);
   return result.ok ? { ok: true } : { ok: false, reason: result.reason };
+}
+
+/** 충원 확정: 읽기 → 후보·정원 검사 → 저장을 한 덩어리(transaction)로 실행한다. 같은 자리에 두 번 충원되거나 재회신과 겹치는 일을 막는다. */
+export function confirmFill(store: Store, input: FillInput, options: ChangeOptions = {}): Promise<FillResult> {
+  return store.transaction(() => confirmFillUnlocked(store, input, options));
 }

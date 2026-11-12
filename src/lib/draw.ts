@@ -30,7 +30,7 @@ export type DrawResult =
 
 const fail = (reason: string, errors?: DrawFormErrors): DrawResult => ({ ok: false, reason, errors });
 
-export async function runDraw(
+async function runDrawUnlocked(
   store: Store,
   input: { capacity: string; waitSeats: string; replyDeadline?: string },
   options: DrawOptions = {},
@@ -141,4 +141,13 @@ export async function runDraw(
     shortage: Math.max(0, toDraw - lots.selected.length),
     redraw,
   };
+}
+
+/** 2차 추첨: 읽기 → 대상·정원 검사 → 저장을 한 덩어리(transaction)로 실행한다. 추첨 도중에 상태가 바뀌어도 예전 명단으로 덮어쓰지 않는다. */
+export function runDraw(
+  store: Store,
+  input: { capacity: string; waitSeats: string; replyDeadline?: string },
+  options: DrawOptions = {},
+): Promise<DrawResult> {
+  return store.transaction(() => runDrawUnlocked(store, input, options));
 }

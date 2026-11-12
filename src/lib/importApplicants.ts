@@ -20,7 +20,7 @@ export interface UploadedFile {
   buffer: Buffer;
 }
 
-export async function importApplicants(
+async function importApplicantsUnlocked(
   store: Store,
   file: UploadedFile,
   now: string = new Date().toISOString(),
@@ -72,4 +72,13 @@ export async function importApplicants(
       restored: plan.restored,
     },
   };
+}
+
+/** 신청자 엑셀 등록: 기존 사번 읽기 → 중복 검사 → 저장을 한 덩어리(transaction)로 실행한다. 같은 파일을 동시에 두 번 올려도 사번이 겹쳐 등록되지 않는다. */
+export function importApplicants(
+  store: Store,
+  file: UploadedFile,
+  now: string = new Date().toISOString(),
+): Promise<ImportResult> {
+  return store.transaction(() => importApplicantsUnlocked(store, file, now));
 }

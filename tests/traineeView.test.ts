@@ -4,6 +4,7 @@ import {
   describeMyStatus,
   hasReplySection,
   lastUpdatedText,
+  remainingLabel,
   replyDeadlineFor,
 } from "@/domain/traineeView";
 import { STATUSES } from "@/domain/types";
@@ -76,7 +77,19 @@ describe("작업 17: 회신 기한 (본인 기한 → 과정 기한)", () => {
       text: "2026-11-20 18:00",
       passed: false,
       personal: false,
+      remaining: "5일 6시간 남음", // 11월 15일 12시 → 11월 20일 18시
     });
+  });
+
+  it("남은 시간을 쉬운 말로 알려 준다 (일+시간 / 시간 / 분, 지나면 안내)", () => {
+    const at = (now: string) => remainingLabel("2026-11-20T18:00:00+09:00", now);
+    expect(at("2026-11-17T18:00:00+09:00")).toBe("3일 남음");
+    expect(at("2026-11-17T15:30:00+09:00")).toBe("3일 2시간 남음");
+    expect(at("2026-11-20T08:00:00+09:00")).toBe("10시간 남음");
+    expect(at("2026-11-20T17:20:00+09:00")).toBe("40분 남음");
+    expect(at("2026-11-20T17:59:30+09:00")).toBe("1분 남음"); // 1분 미만도 0분이라 하지 않는다
+    expect(at("2026-11-20T18:00:00+09:00")).toBe("1분 남음"); // 정확히 기한 시각까지는 아직 유효
+    expect(at("2026-11-20T18:00:01+09:00")).toBe("기한이 지났습니다");
   });
 
   it("개별 기한이 있으면 과정 기한보다 우선한다", () => {

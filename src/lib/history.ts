@@ -253,15 +253,18 @@ export async function changeStatuses(
   extra: StoreChanges = {},
   options: ChangeOptions = {},
 ): Promise<ChangeResult> {
-  const built = buildStatusChanges(await store.readAll(), inputs, extra, options);
-  if (!built.ok || !built.changes) return built;
-  try {
-    await store.commit(built.changes);
-  } catch (error) {
-    if (error instanceof StoreError) return { ok: false, reason: error.message };
-    throw error;
-  }
-  return { ok: true, trainees: built.trainees, history: built.history };
+  // 읽기 → 전환표 검사 → 저장을 한 덩어리로: 그 사이에 다른 요청이 같은 교육생을 바꾸지 못한다
+  return store.transaction(async () => {
+    const built = buildStatusChanges(await store.readAll(), inputs, extra, options);
+    if (!built.ok || !built.changes) return built;
+    try {
+      await store.commit(built.changes);
+    } catch (error) {
+      if (error instanceof StoreError) return { ok: false, reason: error.message } as const;
+      throw error;
+    }
+    return { ok: true, trainees: built.trainees, history: built.history } as const;
+  });
 }
 
 /** 상태 변경 한 건을 저장한다 (`changeStatuses`의 한 건짜리). */

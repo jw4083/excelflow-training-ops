@@ -8,6 +8,7 @@ import { describeMyStatus, hasReplySection, lastUpdatedText, replyDeadlineFor } 
 import { replyFormState } from "@/domain/replyRules";
 import { formatKst, formatPeriodKo } from "@/lib/datetime";
 import { ReplyForm } from "./reply-form";
+import { ResourceLinks } from "./resource-links";
 import { logoutTraineeAction } from "@/app/actions/trainee";
 import { getTraineeEmpNo } from "@/lib/auth";
 import { getStore } from "@/store";
@@ -73,8 +74,7 @@ async function TraineeGate() {
               <h2 className="text-base font-bold">회신</h2>
               {deadline ? (
                 <p className="text-base">
-                  회신 기한: {deadline.text}
-                  {deadline.passed && " (기한이 지났습니다)"}
+                  회신 기한: {deadline.text} <strong className="font-bold">({deadline.remaining})</strong>
                 </p>
               ) : (
                 <p className="text-base">회신 기한은 아직 정해지지 않았습니다.</p>
@@ -96,6 +96,8 @@ async function TraineeGate() {
               )}
             </div>
           )}
+          {/* 링크 영역의 빈 자리 (PRD M2-12): 카톡방·퀴즈·설문 링크는 이번에 만들지 않으므로 지금은 아무것도 넘기지 않아 보이지 않는다 */}
+          <ResourceLinks />
           <form action={logoutTraineeAction}>
             <button
               type="submit"

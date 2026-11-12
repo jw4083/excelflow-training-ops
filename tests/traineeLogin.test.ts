@@ -203,6 +203,7 @@ function countingStore(inner: FileStore) {
     getCourse: () => inner.getCourse(),
     getTraineeByEmpNo: (e) => inner.getTraineeByEmpNo(e),
     getReply: (id) => inner.getReply(id),
+    transaction: (work) => inner.transaction(work),
     commit: (changes) => {
       commits++;
       return inner.commit(changes);
