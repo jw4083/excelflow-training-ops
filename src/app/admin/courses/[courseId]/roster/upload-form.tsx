@@ -1,5 +1,6 @@
 "use client";
 // 신청자 엑셀 업로드 영역 (DESIGN 2.3 "명단" 위쪽): 파일 선택 + 업로드 버튼 + 안내 문구 + 결과 목록
+import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, useState, type ReactNode } from "react";
 import { uploadApplicants, type UploadState } from "@/app/actions/applicants";
 
@@ -39,6 +40,7 @@ export function UploadForm({ children }: { children?: ReactNode }) {
   return (
     <div className="flex flex-col gap-4">
       <form action={formAction} className="flex flex-col gap-3">
+      <CourseIdField />
         <label htmlFor="file" className="text-base font-medium">
           신청자 엑셀 파일
         </label>

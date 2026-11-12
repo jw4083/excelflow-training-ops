@@ -5,9 +5,8 @@ import { connection } from "next/server";
 import { capacitySummary } from "@/domain/capacity";
 import { countByStatus, paginate, parseFilter, parsePage, visibleTrainees } from "@/domain/roster";
 import { defaultFillDeadline, fillExceedsCapacity, openVacancies } from "@/domain/fill";
-import { requireAdmin } from "@/lib/auth";
+import { courseBase, openAdminCourse } from "@/lib/adminCourse";
 import { isoToKstLocal } from "@/lib/datetime";
-import { getStore } from "@/store";
 import { CapacitySummaryBar } from "./capacity-summary";
 import { ManualAdd } from "./manual-add";
 import { RosterTable } from "./roster-table";
@@ -15,26 +14,28 @@ import { RosterTabs } from "./roster-tabs";
 import { SelectionToolbar } from "./selection-controls";
 import { UploadForm } from "./upload-form";
 
+type Params = Promise<{ courseId: string }>;
 type SearchParams = Promise<{ status?: string | string[]; page?: string | string[] }>;
 
-export default function RosterPage({ searchParams }: { searchParams: SearchParams }) {
+export default function RosterPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   // 로그인 확인·저장소 읽기·주소의 ?status= 값은 모두 요청이 들어온 뒤에 알 수 있는 값이므로 Suspense 안에 둔다 (Cache Components 규칙)
   return (
     <Suspense fallback={<p className="px-4 py-8 text-base text-zinc-600 dark:text-zinc-400">불러오는 중…</p>}>
-      <RosterContent searchParams={searchParams} />
+      <RosterContent params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function RosterContent({ searchParams }: { searchParams: SearchParams }) {
-  await requireAdmin();
+async function RosterContent({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
+  const { courseId } = await params;
+  const store = await openAdminCourse(courseId); // 로그인 확인 + 이 과정의 저장소만 연다 (없는 과정이면 찾을 수 없음 화면)
   await connection();
-  const params = await searchParams;
-  const filter = parseFilter(params.status);
+  const query = await searchParams;
+  const filter = parseFilter(query.status);
 
-  const data = await getStore().readAll();
+  const data = await store.readAll();
   const counts = countByStatus(data.trainees);
-  const page = paginate(visibleTrainees(data.trainees, filter), parsePage(params.page));
+  const page = paginate(visibleTrainees(data.trainees, filter), parsePage(query.page));
   const replies = new Map(data.replies.map((r) => [r.traineeId, r]));
 
   return (
@@ -43,7 +44,7 @@ async function RosterContent({ searchParams }: { searchParams: SearchParams }) {
         <h1 className="text-2xl font-bold tracking-tight">명단</h1>
         {/* 파일 내려받기는 화면 이동이 아니므로 Link 대신 일반 링크를 쓴다 */}
         <a
-          href="/admin/export"
+          href={`${courseBase(courseId)}/export`}
           download
           className="inline-flex h-11 items-center rounded-lg bg-primary px-5 text-base font-semibold text-white hover:bg-primary-hover dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
         >
@@ -66,9 +67,9 @@ async function RosterContent({ searchParams }: { searchParams: SearchParams }) {
         exceeds={fillExceedsCapacity(data.course?.capacity, data.trainees)}
       />
 
-      <RosterTabs active={filter} counts={counts} />
+      <RosterTabs active={filter} counts={counts} courseId={courseId} />
       {filter === "신청" && <SelectionToolbar empty={page.total === 0} />}
-      <RosterTable page={page} filter={filter} replies={replies} canCancelSelection={data.draws.length === 0} />
+      <RosterTable page={page} filter={filter} replies={replies} canCancelSelection={data.draws.length === 0} courseId={courseId} />
     </main>
   );
 }

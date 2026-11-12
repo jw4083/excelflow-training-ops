@@ -30,7 +30,7 @@ function Lines({ lines }: { lines: string[] }) {
   );
 }
 
-export function HistoryTable({ page, filter, nameOf }: { page: Page<History>; filter: HistoryFilter; nameOf: NameOf }) {
+export function HistoryTable({ page, filter, nameOf, courseId }: { page: Page<History>; filter: HistoryFilter; nameOf: NameOf; courseId: string }) {
   if (page.total === 0) {
     return (
       <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-8 text-center text-base text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
@@ -87,7 +87,7 @@ export function HistoryTable({ page, filter, nameOf }: { page: Page<History>; fi
         {page.pageCount > 1 && (
           <nav aria-label="쪽 이동" className="flex items-center gap-2">
             {page.page > 1 ? (
-              <Link href={historyHref(filter, page.page - 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
+              <Link href={historyHref(courseId, filter, page.page - 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
                 이전
               </Link>
             ) : (
@@ -99,7 +99,7 @@ export function HistoryTable({ page, filter, nameOf }: { page: Page<History>; fi
               {page.page} / {page.pageCount}
             </span>
             {page.page < page.pageCount ? (
-              <Link href={historyHref(filter, page.page + 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
+              <Link href={historyHref(courseId, filter, page.page + 1)} className="flex h-11 items-center rounded-lg border border-zinc-300 px-4 font-medium hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
                 다음
               </Link>
             ) : (

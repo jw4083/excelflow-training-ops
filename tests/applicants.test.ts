@@ -169,7 +169,7 @@ describe("작업 10: 업로드 → 저장 (가짜 엑셀 전체 흐름)", () => 
 
     const { trainees, history } = await store.readAll();
     expect(trainees).toHaveLength(28);
-    expect(trainees.every((t) => t.status === "신청" && !t.isManual && t.loginFails === 0)).toBe(true);
+    expect(trainees.every((t) => t.status === "신청" && !t.isManual && t.loginFails === undefined)).toBe(true);
     expect(trainees.filter((t) => t.empNo.startsWith("0"))).toHaveLength(5); // 앞자리 0 사번 5개가 그대로
     expect(trainees.some((t) => t.name.includes("중복행"))).toBe(false); // 중복 행은 남지 않음
     expect(history).toHaveLength(0); // 업로드는 상태 변경 이력이 아니다

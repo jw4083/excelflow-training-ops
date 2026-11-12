@@ -1,6 +1,7 @@
 "use client";
 // 충원 창 (PLAN 작업 20, DESIGN 2.3 "회신 현황"): 비는 자리 하나에 대해 후보를 제시하고, "확정" 버튼을 눌러야만 확정한다.
 // 후보: 대기자가 있으면 가장 앞 순번 한 명, 없으면 미선정자 중에서 직접 선택. 정원을 넘게 되면 경고 뒤 "정원 초과 확정".
+import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, useState } from "react";
 import { confirmFillAction, type FillState } from "@/app/actions/fill";
 
@@ -55,6 +56,7 @@ export function FillPanel({
 
       {open && (
         <form action={action} className="flex flex-col gap-4 rounded-lg bg-white p-4 dark:bg-zinc-900">
+      <CourseIdField />
           <input type="hidden" name="targetId" value={target.id} />
           {over && <input type="hidden" name="confirmOver" value="yes" />}
 

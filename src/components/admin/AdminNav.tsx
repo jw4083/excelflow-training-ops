@@ -6,25 +6,26 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 const ITEMS = [
-  { href: "/admin/course", label: "과정 정보" },
-  { href: "/admin/roster", label: "명단" },
-  { href: "/admin/draw", label: "추첨" },
-  { href: "/admin/replies", label: "회신 현황", hasBadge: true },
-  { href: "/admin/history", label: "변경 이력" },
+  { path: "course", label: "과정 정보" },
+  { path: "roster", label: "명단" },
+  { path: "draw", label: "추첨" },
+  { path: "replies", label: "회신 현황", hasBadge: true },
+  { path: "history", label: "변경 이력" },
 ] as const;
 
 /** replyBadge: "회신 현황" 메뉴 옆에 붙는 충원 알림 숫자 표시 (서버에서 계산해 넘겨받는다) */
-export function AdminNav({ replyBadge }: { replyBadge: ReactNode }) {
+export function AdminNav({ courseId, replyBadge }: { courseId: string; replyBadge: ReactNode }) {
   const pathname = usePathname();
 
   return (
     <nav aria-label="담당자 메뉴" className="flex gap-1 overflow-x-auto p-2 md:flex-col md:overflow-visible md:p-3">
       {ITEMS.map((item) => {
-        const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        const href = `/admin/courses/${courseId}/${item.path}`;
+        const active = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
-            key={item.href}
-            href={item.href}
+            key={item.path}
+            href={href}
             aria-current={active ? "page" : undefined}
             className={`flex h-11 shrink-0 items-center rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
               active

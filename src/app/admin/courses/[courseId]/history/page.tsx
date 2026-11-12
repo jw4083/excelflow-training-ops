@@ -3,31 +3,32 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { countByKind, parseKindFilter, visibleHistory } from "@/domain/historyView";
 import { paginate, parsePage } from "@/domain/roster";
-import { requireAdmin } from "@/lib/auth";
-import { getStore } from "@/store";
+import { openAdminCourse } from "@/lib/adminCourse";
 import { HistoryTable } from "./history-table";
 import { HistoryTabs } from "./history-tabs";
 
+type Params = Promise<{ courseId: string }>;
 type SearchParams = Promise<{ kind?: string | string[]; page?: string | string[] }>;
 
-export default function HistoryPage({ searchParams }: { searchParams: SearchParams }) {
+export default function HistoryPage({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
   // 로그인 확인·저장소 읽기·주소의 ?kind= 값은 모두 요청이 들어온 뒤에 알 수 있는 값이므로 Suspense 안에 둔다 (Cache Components 규칙)
   return (
     <Suspense fallback={<p className="px-4 py-8 text-base text-zinc-600 dark:text-zinc-400">불러오는 중…</p>}>
-      <HistoryContent searchParams={searchParams} />
+      <HistoryContent params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
-async function HistoryContent({ searchParams }: { searchParams: SearchParams }) {
-  await requireAdmin();
+async function HistoryContent({ params, searchParams }: { params: Params; searchParams: SearchParams }) {
+  const { courseId } = await params;
+  const store = await openAdminCourse(courseId);
   await connection();
-  const params = await searchParams;
-  const filter = parseKindFilter(params.kind);
+  const query = await searchParams;
+  const filter = parseKindFilter(query.kind);
 
-  const { history, trainees } = await getStore().readAll();
+  const { history, trainees } = await store.readAll();
   const byId = new Map(trainees.map((t) => [t.id, `${t.name}(${t.empNo})`]));
-  const page = paginate(visibleHistory(history, filter), parsePage(params.page));
+  const page = paginate(visibleHistory(history, filter), parsePage(query.page));
 
   return (
     <main className="flex w-full max-w-6xl flex-col gap-6 px-4 py-8">
@@ -37,8 +38,8 @@ async function HistoryContent({ searchParams }: { searchParams: SearchParams }) 
           선별·추첨·불참·충원 등 명단의 모든 변경이 일시, 변경 전, 변경 후와 함께 남습니다. 이력은 수정하거나 지울 수 없고, 최신 순으로 보입니다.
         </p>
       </div>
-      <HistoryTabs active={filter} counts={countByKind(history)} />
-      <HistoryTable page={page} filter={filter} nameOf={(id) => byId.get(id)} />
+      <HistoryTabs active={filter} counts={countByKind(history)} courseId={courseId} />
+      <HistoryTable page={page} filter={filter} nameOf={(id) => byId.get(id)} courseId={courseId} />
     </main>
   );
 }

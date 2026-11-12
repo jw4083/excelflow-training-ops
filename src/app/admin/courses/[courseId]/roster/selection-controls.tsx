@@ -1,6 +1,7 @@
 "use client";
 // 1차 선별 화면 조작 (DESIGN 2.3 "명단"): "신청" 탭의 체크박스 + "선택한 사람 선정 처리" 버튼, 선정 행의 "선별 취소" 버튼.
 // 체크박스는 표 안에 있고 선정 처리 양식(select-form)은 표 위에 있다. 두 곳은 HTML의 form 속성(form="select-form")으로 이어진다.
+import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState } from "react";
 import { cancelSelectionAction, selectApplicantsAction, type SelectionState } from "@/app/actions/selection";
 
@@ -37,6 +38,7 @@ export function SelectionToolbar({ empty }: { empty: boolean }) {
 
   return (
     <form id={SELECT_FORM_ID} action={formAction} className="flex flex-col gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-800">
+      <CourseIdField />
       <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
         <label className="flex h-11 cursor-pointer items-center gap-3 text-base">
           <input type="checkbox" className="h-5 w-5" onChange={(e) => toggleAll(e.target.checked)} />
@@ -63,6 +65,7 @@ export function CancelSelectionButton({ traineeId, name }: { traineeId: string; 
   const [state, formAction, pending] = useActionState<SelectionState | undefined, FormData>(cancelSelectionAction, undefined);
   return (
     <form action={formAction} className="flex flex-col gap-1">
+      <CourseIdField />
       <input type="hidden" name="traineeId" value={traineeId} />
       <button
         type="submit"

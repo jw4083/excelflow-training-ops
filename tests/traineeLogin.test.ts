@@ -1,10 +1,11 @@
 // 작업 16 확인용 검사: 교육생 로그인(사번 + 실습용 비밀번호), 잠금, 로그인 쿠키를 저장소까지 포함해 본다.
+// 여러 과정 운영: 로그인 실패 기록은 과정이 아니라 사번 하나에 하나이고, 로그인은 "보관되지 않은 과정 어딘가에 등록된 사번"만 된다.
 // 실제 .env 값은 쓰지 않고, 이 검사 안에서만 가짜 값을 환경에 넣는다.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import type { Status, Trainee } from "@/domain/types";
+import type { Course, Status, Trainee } from "@/domain/types";
 import {
   TRAINEE_LOGIN_MESSAGES,
   checkTraineePassword,
@@ -16,42 +17,57 @@ import {
   signToken,
   traineeEmpNoFromToken,
 } from "@/lib/auth";
-import type { Store } from "@/store";
-import { FileStore } from "@/store/fileStore";
+import type { Catalog, LoginRecord, Store } from "@/store";
+import { FileCatalog } from "@/store/fileCatalog";
 
 const PASSWORD = "test-trainee-pass"; // 검사용 가짜 비밀번호
 const SECRET = "x".repeat(64); // 검사용 가짜 서명 키
 const NOW = "2026-11-15T10:00:00.000Z";
 const at = (minutes: number) => new Date(Date.parse(NOW) + minutes * 60 * 1000).toISOString();
+const T0 = "2026-11-12T09:00:00+09:00";
+
+const course = (name: string): Course => ({
+  name,
+  startDate: "2026-12-01",
+  endDate: "2026-12-03",
+  place: "교육장",
+  notice: "",
+  replyDeadline: "2026-11-20T18:00:00+09:00",
+  updatedAt: T0,
+});
 
 let dir: string;
-let store: FileStore;
+let catalog: FileCatalog;
+let store: Store; // 첫 번째 과정의 저장소
 beforeEach(async () => {
   vi.stubEnv("TRAINEE_TEST_PASSWORD", PASSWORD);
   vi.stubEnv("SESSION_SECRET", SECRET);
   dir = await mkdtemp(path.join(tmpdir(), "trainee-login-test-"));
-  store = new FileStore(path.join(dir, "db.json"));
+  catalog = new FileCatalog(dir);
+  store = (await catalog.openCourse(await catalog.createCourse(course("첫 과정"), T0))) as Store;
 });
 afterEach(async () => {
   vi.unstubAllEnvs();
   await rm(dir, { recursive: true, force: true });
 });
 
-const person = (empNo: string, extra: Partial<Trainee> = {}, status: Status = "선정"): Trainee => ({
+const person = (empNo: string, status: Status = "선정"): Trainee => ({
   id: `p${empNo}`,
   empNo,
   name: `김테스트${empNo}`,
   dept: "인재개발부",
   status,
   isManual: false,
-  loginFails: 0,
-  createdAt: "2026-11-12T09:00:00+09:00",
-  updatedAt: "2026-11-12T09:00:00+09:00",
-  ...extra,
+  createdAt: T0,
+  updatedAt: T0,
 });
 const seed = (...list: Trainee[]) => store.commit({ upsertTrainees: list });
-const trainee = async (empNo: string) => (await store.getTraineeByEmpNo(empNo)) as Trainee;
-const login = (empNo: string, password: string, now = NOW) => loginTrainee(store, { empNo, password }, now);
+/** 이 사번의 저장된 로그인 실패 기록 (없으면 null). 읽기만 하며 바꾸지 않는다 */
+const record = (empNo: string): Promise<LoginRecord | null> =>
+  catalog.loginAttempts.update(empNo, (current) => ({ next: current, result: current }));
+const login = (empNo: string, password: string, now = NOW) => loginTrainee(catalog, { empNo, password }, now);
+/** 실패 기록을 직접 심는다 (잠금 중인 사번을 만들 때) */
+const lockOut = (empNo: string, rec: LoginRecord) => catalog.loginAttempts.update(empNo, () => ({ next: rec, result: undefined }));
 
 describe("작업 16: 교육생 로그인", () => {
   it("명단에 있는 사번 + 맞는 비밀번호면 로그인된다 (본인 이름을 돌려준다)", async () => {
@@ -67,7 +83,7 @@ describe("작업 16: 교육생 로그인", () => {
 
   it("명단에 있으면 상태(신청·선정·대기·미선정·불참·제외)와 상관없이 로그인할 수 있다", async () => {
     const statuses: Status[] = ["신청", "선정", "대기", "미선정", "불참", "제외"];
-    await seed(...statuses.map((s, i) => person(String(100010 + i), {}, s)));
+    await seed(...statuses.map((s, i) => person(String(100010 + i), s)));
     for (let i = 0; i < statuses.length; i++) expect(await login(String(100010 + i), PASSWORD)).toMatchObject({ ok: true });
   });
 
@@ -102,15 +118,16 @@ describe("작업 16: 교육생 로그인", () => {
         expect(await login(bad, "아무거나")).toMatchObject({ ok: false, reason: "format", message: "사번은 숫자 6자리입니다." });
       }
     }
-    expect((await trainee("100001")).loginFails).toBe(0);
+    expect(await record("100001")).toBeNull();
     expect(await login("100001", PASSWORD)).toMatchObject({ ok: true }); // 잠기지 않았다
   });
 
-  it("로그인 시도는 명단의 변경이 아니라서 최종 수정 일시(updatedAt)를 바꾸지 않는다", async () => {
+  it("로그인 시도는 명단의 변경이 아니라서 교육생 레코드(최종 수정 일시 등)를 바꾸지 않는다", async () => {
     await seed(person("100001"));
+    const before = JSON.stringify(await store.readAll());
     await login("100001", "틀림");
     await login("100001", PASSWORD);
-    expect((await trainee("100001")).updatedAt).toBe("2026-11-12T09:00:00+09:00");
+    expect(JSON.stringify(await store.readAll())).toBe(before);
   });
 
   it("비밀번호나 서명 키 설정이 없으면 로그인할 수 없다 (설정 안내만 하고 저장하지 않는다)", async () => {
@@ -121,7 +138,7 @@ describe("작업 16: 교육생 로그인", () => {
     vi.stubEnv("TRAINEE_TEST_PASSWORD", PASSWORD);
     vi.stubEnv("SESSION_SECRET", "짧음");
     expect(await login("100001", PASSWORD)).toMatchObject({ ok: false, reason: "unconfigured" });
-    expect((await trainee("100001")).loginFails).toBe(0);
+    expect(await record("100001")).toBeNull();
   });
 });
 
@@ -130,44 +147,41 @@ describe("작업 16: 5회 연속 실패하면 15분 잠금", () => {
     await seed(person("100001"));
     for (let i = 1; i <= 4; i++) {
       expect(await login("100001", "틀림")).toMatchObject({ reason: "invalid" });
-      expect((await trainee("100001")).loginFails).toBe(i);
+      expect((await record("100001"))?.fails).toBe(i);
     }
     const fifth = await login("100001", "틀림");
     // 잠금이 걸렸어도 화면에 보이는 문구는 다른 실패와 같다 (reason은 검사용이며 화면에 나오지 않는다)
     expect(fifth).toMatchObject({ ok: false, reason: "locked", message: TRAINEE_LOGIN_MESSAGES.failed });
-    const saved = await trainee("100001");
-    expect(saved.loginFails).toBe(5);
-    expect(saved.lockedUntil).toBe(at(15));
+    expect(await record("100001")).toEqual({ fails: 5, lockedUntil: at(15) });
   });
 
   it("잠금 중에는 맞는 비밀번호도 거부하고, 잠금 시각은 늘어나지 않는다", async () => {
-    await seed(person("100001", { loginFails: 5, lockedUntil: at(15) }));
+    await seed(person("100001"));
+    await lockOut("100001", { fails: 5, lockedUntil: at(15) });
     expect(await login("100001", PASSWORD, at(5))).toMatchObject({ ok: false, reason: "locked" });
     expect(await login("100001", "틀림", at(10))).toMatchObject({ ok: false, reason: "locked" });
-    expect((await trainee("100001")).lockedUntil).toBe(at(15));
+    expect((await record("100001"))?.lockedUntil).toBe(at(15));
   });
 
   it("15분이 지나면 다시 로그인할 수 있고, 성공하면 실패 기록이 지워진다", async () => {
-    await seed(person("100001", { loginFails: 5, lockedUntil: at(15) }));
+    await seed(person("100001"));
+    await lockOut("100001", { fails: 5, lockedUntil: at(15) });
     expect(await login("100001", PASSWORD, at(15))).toMatchObject({ ok: true });
-    const saved = await trainee("100001");
-    expect(saved.loginFails).toBe(0);
-    expect(saved.lockedUntil).toBeUndefined();
+    expect(await record("100001")).toBeNull();
   });
 
   it("잠금이 풀린 뒤 또 틀리면 처음부터 다시 센다 (바로 다시 잠기지 않는다)", async () => {
-    await seed(person("100001", { loginFails: 5, lockedUntil: at(15) }));
+    await seed(person("100001"));
+    await lockOut("100001", { fails: 5, lockedUntil: at(15) });
     expect(await login("100001", "틀림", at(20))).toMatchObject({ reason: "invalid" });
-    const saved = await trainee("100001");
-    expect(saved.loginFails).toBe(1);
-    expect(saved.lockedUntil).toBeUndefined();
+    expect(await record("100001")).toEqual({ fails: 1 });
   });
 
   it("4번 틀리고 한 번 맞으면 횟수가 지워진다", async () => {
     await seed(person("100001"));
     for (let i = 0; i < 4; i++) await login("100001", "틀림");
     expect(await login("100001", PASSWORD)).toMatchObject({ ok: true });
-    expect((await trainee("100001")).loginFails).toBe(0);
+    expect(await record("100001")).toBeNull();
   });
 
   it("한 사람이 잠겨도 다른 사람은 로그인할 수 있다", async () => {
@@ -180,41 +194,72 @@ describe("작업 16: 5회 연속 실패하면 15분 잠금", () => {
   it("동시에 20번 틀린 비밀번호를 보내도 잠금을 피할 수 없다 (한 번에 하나씩 처리)", async () => {
     await seed(person("100001"));
     const results = await Promise.all(Array.from({ length: 20 }, () => login("100001", "틀림")));
-    const saved = await trainee("100001");
-    expect(saved.loginFails).toBe(5); // 20번이 모두 1로 덮어써지지 않고 정확히 세어졌다
-    expect(saved.lockedUntil).toBeDefined();
+    const saved = await record("100001");
+    expect(saved?.fails).toBe(5); // 20번이 모두 1로 덮어써지지 않고 정확히 세어졌다
+    expect(saved?.lockedUntil).toBeDefined();
     expect(results.filter((r) => !r.ok && r.reason === "locked").length).toBeGreaterThanOrEqual(16); // 5번째부터 잠금
     expect(await login("100001", PASSWORD)).toMatchObject({ reason: "locked" });
   });
 
-  it("잠금과 실패 횟수는 저장 파일에도 남는다 (새 저장소로 열어도 잠겨 있다)", async () => {
+  it("잠금과 실패 횟수는 저장 파일에도 남는다 (새 카탈로그로 열어도 잠겨 있다)", async () => {
     await seed(person("100001"));
     for (let i = 0; i < 5; i++) await login("100001", "틀림");
-    const reopened = new FileStore(path.join(dir, "db.json"));
+    const reopened = new FileCatalog(dir);
     expect(await loginTrainee(reopened, { empNo: "100001", password: PASSWORD }, at(1))).toMatchObject({ reason: "locked" });
   });
 });
 
-/** 저장소에 몇 번 썼는지 세는 감시용 저장소 (응답 시간 차이를 만들 수 있는 "쓰기 횟수"가 같은지 보려는 것) */
-function countingStore(inner: FileStore) {
-  let commits = 0;
-  const wrapper: Store = {
-    readAll: () => inner.readAll(),
-    getCourse: () => inner.getCourse(),
-    getTraineeByEmpNo: (e) => inner.getTraineeByEmpNo(e),
-    getReply: (id) => inner.getReply(id),
-    transaction: (work) => inner.transaction(work),
-    commit: (changes) => {
-      commits++;
-      return inner.commit(changes);
+describe("여러 과정: 로그인 잠금은 사번 하나에 하나, 보관된 과정만 있으면 로그인되지 않는다", () => {
+  const second = async () => (await catalog.openCourse(await catalog.createCourse(course("둘째 과정"), "2026-11-13T09:00:00+09:00"))) as Store;
+
+  it("같은 직원이 두 과정에 등록돼 있어도 5번 틀리면 잠긴다 (과정마다 5번씩 시도할 수 없다)", async () => {
+    const other = await second();
+    await seed(person("100001"));
+    await other.commit({ upsertTrainees: [{ ...person("100001", "신청"), id: "other-p" }] });
+    for (let i = 0; i < 5; i++) await login("100001", "틀림");
+    expect(await record("100001")).toEqual({ fails: 5, lockedUntil: at(15) });
+    expect(await login("100001", PASSWORD, at(1))).toMatchObject({ ok: false, reason: "locked" });
+  });
+
+  it("등록된 과정이 모두 보관되면 로그인되지 않고, 보관을 풀면 다시 된다", async () => {
+    await seed(person("100001"));
+    await store.commit({ archivedAt: NOW });
+    expect(await login("100001", PASSWORD)).toMatchObject({ ok: false, reason: "invalid", message: TRAINEE_LOGIN_MESSAGES.failed });
+    expect(await record("100001")).toBeNull(); // 없는 사번처럼 취급 → 실패 기록도 만들지 않는다
+    await store.commit({ archivedAt: null });
+    expect(await login("100001", PASSWORD)).toMatchObject({ ok: true });
+  });
+
+  it("한 과정만 보관돼도 다른 과정에 등록돼 있으면 로그인된다", async () => {
+    const other = await second();
+    await seed(person("100001"));
+    await other.commit({ upsertTrainees: [{ ...person("100001"), id: "other-p" }] });
+    await store.commit({ archivedAt: NOW });
+    expect(await login("100001", PASSWORD)).toMatchObject({ ok: true });
+  });
+});
+
+/** 로그인 기록 저장을 몇 번 불렀는지 세는 감시용 카탈로그 (응답 시간 차이를 만들 수 있는 "쓰기 횟수"가 같은지 보려는 것) */
+function countingCatalog(inner: Catalog) {
+  let writes = 0;
+  const wrapper: Catalog = {
+    listCourses: () => inner.listCourses(),
+    openCourse: (id) => inner.openCourse(id),
+    createCourse: (c, now) => inner.createCourse(c, now),
+    findEnrollments: (e) => inner.findEnrollments(e),
+    loginAttempts: {
+      update: (empNo, work) => {
+        writes++;
+        return inner.loginAttempts.update(empNo, work);
+      },
     },
   };
   return {
     wrapper,
     /** 지금까지 센 쓰기 횟수를 돌려주고 0으로 되돌린다 */
     take: () => {
-      const n = commits;
-      commits = 0;
+      const n = writes;
+      writes = 0;
       return n;
     },
   };
@@ -248,7 +293,8 @@ describe("작업 16 보강: 사번이 명단에 있는지·잠겨 있는지가 �
   });
 
   it("실패의 종류와 상관없이 응답에서 달라지는 것은 내부용 reason뿐이다 (ok와 message는 같다)", async () => {
-    await seed(person("100001"), person("100002", { loginFails: 5, lockedUntil: at(15) }));
+    await seed(person("100001"), person("100002"));
+    await lockOut("100002", { fails: 5, lockedUntil: at(15) });
     const results = [
       await login("999999", PASSWORD), // 없는 사번
       await login("100001", "틀림"), // 비밀번호 틀림
@@ -257,9 +303,10 @@ describe("작업 16 보강: 사번이 명단에 있는지·잠겨 있는지가 �
     expect(new Set(results.map((r) => JSON.stringify({ ok: r.ok, message: r.ok ? "" : r.message }))).size).toBe(1);
   });
 
-  it("실패하는 모든 경우가 저장소에 똑같이 한 번씩 쓴다 (응답 시간 차이로 사번 존재·잠금을 알아낼 수 없다)", async () => {
-    await seed(person("100001"), person("100002", { loginFails: 5, lockedUntil: at(15) }));
-    const { wrapper, take } = countingStore(store);
+  it("실패하는 모든 경우가 로그인 기록 저장을 똑같이 한 번씩 부른다 (응답 시간 차이로 사번 존재·잠금을 알아낼 수 없다)", async () => {
+    await seed(person("100001"), person("100002"));
+    await lockOut("100002", { fails: 5, lockedUntil: at(15) });
+    const { wrapper, take } = countingCatalog(catalog);
     const attempt = (empNo: string, password: string, now = NOW) => loginTrainee(wrapper, { empNo, password }, now);
 
     await attempt("999999", "틀림"); // 없는 사번
@@ -274,20 +321,24 @@ describe("작업 16 보강: 사번이 명단에 있는지·잠겨 있는지가 �
     expect(take()).toBe(1);
   });
 
-  it("빈 쓰기는 명단·실패 기록·최종 수정 일시를 바꾸지 않는다", async () => {
-    await seed(person("100001"), person("100002", { loginFails: 5, lockedUntil: at(15) }));
+  it("없는 사번·잠금 중 시도는 명단과 실패 기록을 바꾸지 않는다", async () => {
+    await seed(person("100001"), person("100002"));
+    await lockOut("100002", { fails: 5, lockedUntil: at(15) });
     const before = JSON.stringify(await store.readAll());
     await login("999999", "틀림"); // 없는 사번
     await login("100002", PASSWORD, at(1)); // 잠금 중
     expect(JSON.stringify(await store.readAll())).toBe(before);
+    expect(await record("100002")).toEqual({ fails: 5, lockedUntil: at(15) });
+    expect(await record("999999")).toBeNull();
   });
 
-  it("없는 사번을 아무리 시도해도 명단에는 아무것도 생기지 않는다 (실패 기록이 쌓여 저장소가 커지지 않는다)", async () => {
+  it("없는 사번을 아무리 시도해도 아무것도 생기지 않는다 (실패 기록이 쌓여 저장소가 커지지 않는다)", async () => {
     await seed(person("100001"));
     for (let i = 0; i < 30; i++) await login(String(900000 + i), "틀림");
     const all = await store.readAll();
     expect(all.trainees).toHaveLength(1);
     expect(JSON.stringify(all)).not.toContain("9000");
+    for (let i = 0; i < 30; i++) expect(await record(String(900000 + i))).toBeNull();
   });
 });
 

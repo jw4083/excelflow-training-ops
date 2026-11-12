@@ -40,7 +40,7 @@ export async function loginAdmin(_prev: LoginState, formData: FormData): Promise
     path: "/",
     maxAge: ADMIN_SESSION_SECONDS,
   });
-  redirect("/admin/roster");
+  redirect("/admin");
 }
 
 /** 로그아웃: 쿠키를 지우고 로그인 화면으로 보낸다. 로그인 여부와 상관없이 안전하게 실행된다. */

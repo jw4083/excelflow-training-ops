@@ -2,12 +2,16 @@
 // proxy가 /admin 아래를 1차로 막지만, 불참 상세 사유가 들어 있으므로 여기서도 로그인을 다시 확인한다.
 import { buildRosterWorkbook, exportFileName } from "@/domain/exportRoster";
 import { isAdminLoggedIn } from "@/lib/auth";
-import { getStore } from "@/store";
+import { getCatalog } from "@/store";
 
-export async function GET() {
+export async function GET(_request: Request, { params }: { params: Promise<{ courseId: string }> }) {
   if (!(await isAdminLoggedIn())) return new Response("로그인이 필요합니다.", { status: 401 });
 
-  const data = await getStore().readAll();
+  // 주소의 과정 번호로 그 과정의 저장소만 연다 (형식이 틀리거나 없는 과정이면 404). 보관된 과정도 내려받을 수 있다
+  const { courseId } = await params;
+  const store = await getCatalog().openCourse(courseId);
+  if (!store) return new Response("과정을 찾을 수 없습니다.", { status: 404 });
+  const data = await store.readAll();
   const file = await buildRosterWorkbook(data.trainees, data.replies, data.course?.replyDeadline);
   const name = exportFileName(new Date().toISOString());
 

@@ -20,6 +20,12 @@ export function applyChanges(current: DbData, changes: StoreChanges): DbData {
   // 원본을 건드리지 않도록 복사본에서 작업한다 (규칙 위반 시 그대로 버리면 "아무것도 저장 안 됨"이 된다)
   const data: DbData = structuredClone(current);
 
+  // 보관된 과정은 바꿀 수 없다 (보관 해제만 가능). 화면 버튼을 숨기는 것과 별개로 저장 단계에서 막는다
+  if (current.archivedAt && hasContentChanges(changes)) {
+    throw new StoreError("보관된 과정은 바꿀 수 없습니다. 보관을 해제한 뒤 다시 시도해 주세요.");
+  }
+  if (changes.archivedAt !== undefined) data.archivedAt = changes.archivedAt;
+
   if (changes.course) data.course = structuredClone(changes.course);
 
   // 교육생: 있으면 수정, 없으면 추가. 지우는 방법은 없다 (PRD M1-7)
@@ -56,6 +62,13 @@ export function applyChanges(current: DbData, changes: StoreChanges): DbData {
   appendOnly(data.history, changes.appendHistory, "변경 이력");
 
   return data;
+}
+
+/** 보관 표시(archivedAt) 말고 실제 내용을 바꾸는 변경이 들어 있는가 (빈 묶음·빈 목록은 바꾸는 것이 아니다) */
+function hasContentChanges(changes: StoreChanges): boolean {
+  return Object.entries(changes).some(
+    ([key, value]) => key !== "archivedAt" && value !== undefined && !(Array.isArray(value) && value.length === 0),
+  );
 }
 
 function appendOnly<T extends { id: string }>(existing: T[], incoming: T[] | undefined, label: string) {

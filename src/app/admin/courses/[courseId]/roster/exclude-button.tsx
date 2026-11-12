@@ -1,5 +1,6 @@
 "use client";
 // 선정 행의 "제외" 조작 (PLAN 작업 20, DESIGN 2.3 "명단"): 사유를 입력하고 확인한다. "제외하고 바로 충원" 이면 충원 창으로 이어진다.
+import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, useState } from "react";
 import { excludeAction, type FillState } from "@/app/actions/fill";
 
@@ -22,6 +23,7 @@ export function ExcludeButton({ traineeId, name }: { traineeId: string; name: st
 
   return (
     <form action={action} className="flex min-w-64 flex-col gap-2 rounded-lg border border-zinc-300 p-3 dark:border-zinc-700">
+      <CourseIdField />
       <input type="hidden" name="traineeId" value={traineeId} />
       <label htmlFor={`reason-${traineeId}`} className="text-base font-medium">
         {name}님 제외 사유

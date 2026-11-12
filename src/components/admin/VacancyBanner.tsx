@@ -4,8 +4,8 @@
 import Link from "next/link";
 import { getAdminSummary } from "@/lib/adminData";
 
-export async function VacancyBanner() {
-  const { alert } = await getAdminSummary();
+export async function VacancyBanner({ courseId }: { courseId: string }) {
+  const { alert } = await getAdminSummary(courseId);
   if (alert.total === 0 && alert.newCancels === 0) return null;
 
   const parts = [alert.absent > 0 && `불참 ${alert.absent}명`, alert.excluded > 0 && `직접 제외 ${alert.excluded}명`]
@@ -32,7 +32,7 @@ export async function VacancyBanner() {
         </span>
       </p>
       <Link
-        href={alert.newCancels > 0 ? "/admin/replies?filter=cancelled" : "/admin/replies#vacancies"}
+        href={alert.newCancels > 0 ? `/admin/courses/${courseId}/replies?filter=cancelled` : `/admin/courses/${courseId}/replies#vacancies`}
         className="inline-flex h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 text-base font-semibold text-white hover:bg-primary-hover dark:bg-amber-200 dark:text-amber-950 dark:hover:bg-amber-100"
       >
         회신 현황에서 확인

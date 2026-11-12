@@ -63,8 +63,10 @@ export interface Trainee {
   absentOrigin?: AbsentOrigin; // 불참하게 된 경위 (불참·제외 상태에서만). 예전 불참자에게는 없다("경위 미기록")
   cancelledAt?: string; // 참석 회신 후 취소한 시각 (absentOrigin이 "참석후취소"일 때)
   cancelSeenAt?: string; // 담당자가 이 취소를 "확인"한 시각. 없으면 담당자 화면에 "새 취소"로 표시
-  loginFails: number; // 연속 로그인 실패 횟수 (5회가 되면 lockedUntil 설정, 성공하면 0)
-  lockedUntil?: string; // 이 시각까지 로그인 잠금 (15분)
+  /** @deprecated 로그인 실패 기록은 과정이 아닌 사번 기준(LoginRecord)으로 옮겼다. 여러 과정에 등록된 직원이 과정마다 5번씩 시도하는 것을 막기 위해서다. 예전 데이터 호환용으로만 남긴다. */
+  loginFails?: number;
+  /** @deprecated 위와 같음 */
+  lockedUntil?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -146,8 +148,13 @@ export interface History {
 
 // ───────────────────────── 저장되는 전체 모양 ─────────────────────────
 
-/** 저장소에 들어가는 전체 데이터. 저장 방식이 무엇이든 이 모양을 저장한다 (작업 4에서 사용). */
+/**
+ * 저장소에 들어가는 "과정 하나"의 전체 데이터. 저장 방식이 무엇이든 이 모양을 저장한다.
+ * 여러 과정을 운영하므로 과정마다 이 모양이 하나씩 따로 저장된다 (교육생·추첨·회신·이력이 과정끼리 섞이지 않는다).
+ */
 export interface DbData {
+  createdAt?: string; // 과정을 만든 일시 (목록 정렬용). 예전 데이터에는 없다
+  archivedAt?: string | null; // 보관한 일시. 값이 있으면 "보관된 과정": 조회만 가능하고 교육생에게는 보이지 않는다
   course: Course | null; // 아직 입력 전이면 null
   trainees: Trainee[];
   selections: SelectionRecord[];
