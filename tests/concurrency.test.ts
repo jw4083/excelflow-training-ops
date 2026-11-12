@@ -117,6 +117,64 @@ describe("동시 요청: 읽기·검사·저장이 한 덩어리로 실행된다
   });
 });
 
+describe("동시 요청: 참석 취소(회신 기한 뒤 불참 변경)", () => {
+  const BETWEEN = "2026-11-24T10:00:00+09:00"; // 회신 기한(11/20) 뒤, 취소 마감 전
+  const cancelCourse: Course = { ...course, startTime: "09:00", cancelDeadline: "2026-11-27T18:00:00+09:00", capacity: 2 };
+  const absent = { attend: false, absentType: "업무", absentDetail: "긴급 감사 대응으로 참석이 어렵습니다" };
+  const cancelOpts = { now: BETWEEN, confirmed: true };
+
+  async function seedAttended() {
+    await store.commit({ course: cancelCourse, upsertTrainees: [t("a", "100001", "선정"), t("w", "100002", "대기", { waitNo: 1 })] });
+    await submitReply(store, "a", attend, { now: NOW });
+  }
+
+  it("같은 취소를 동시에 두 번 보내도 불참 이력은 한 건만 남는다", async () => {
+    await seedAttended();
+    const results = await Promise.all([submitReply(store, "a", absent, cancelOpts), submitReply(store, "a", absent, cancelOpts)]);
+    expect(results.every((r) => r.ok)).toBe(true);
+    const d = await store.readAll();
+    expect(d.history.filter((h) => h.kind === "참석취소")).toHaveLength(1);
+    expect(d.trainees.find((x) => x.id === "a")?.status).toBe("불참");
+  });
+
+  it("취소와 충원 확정이 겹쳐도 모순이 없다: 충원은 취소 뒤에만 성공하고, 충원 뒤에는 참석 복구가 막힌다", async () => {
+    for (let round = 0; round < 6; round++) {
+      await rm(path.join(dir, "db.json"), { force: true });
+      await seedAttended();
+      const jobs = [
+        () => submitReply(store, "a", absent, cancelOpts),
+        () => confirmFill(store, { targetId: "a", candidateId: "w", replyDeadline: FUTURE }, { now: BETWEEN }),
+      ];
+      if (round % 2) jobs.reverse(); // 도착 순서를 바꿔 가며 확인
+      const results = await Promise.all(jobs.map((job) => job()));
+      const d = await store.readAll();
+      const a = d.trainees.find((x) => x.id === "a")!;
+      const w = d.trainees.find((x) => x.id === "w")!;
+      // 선정 상태인 사람에게는 충원이 확정될 수 없다 → 충원이 먼저 도착했다면 거부되고, 취소가 먼저면 충원이 성공한다
+      expect(a.status === "선정" && a.replacedBy).toBeFalsy();
+      expect(w.status).toBe(a.replacedBy ? "선정" : "대기");
+      if (a.replacedBy) {
+        expect(a.status).toBe("제외");
+        expect((await submitReply(store, "a", attend, { now: BETWEEN, byAdmin: true })).ok).toBe(false); // 충원 후 복구 차단
+      }
+      expect(results.some((r) => r.ok)).toBe(true);
+    }
+  }, 30000);
+
+  it("취소와 담당자 참석 복구가 겹쳐도 최종 상태가 하나로 정해지고 이력 순서와 일치한다", async () => {
+    await seedAttended();
+    await submitReply(store, "a", absent, cancelOpts);
+    await Promise.all([
+      submitReply(store, "a", attend, { now: BETWEEN, byAdmin: true }),
+      submitReply(store, "a", absent, { now: BETWEEN, byAdmin: true, confirmed: true }),
+    ]);
+    const d = await store.readAll();
+    const a = d.trainees.find((x) => x.id === "a")!;
+    const reply = d.replies.find((r) => r.traineeId === "a")!;
+    expect(a.status).toBe(reply.attend ? "선정" : "불참"); // 상태와 마지막 회신이 어긋나지 않는다
+  });
+});
+
 describe("transaction 자체", () => {
   it("안에서 다시 transaction을 불러도 서로 기다리며 멈추지 않는다", async () => {
     const out = await store.transaction(async () => store.transaction(async () => "안쪽"));

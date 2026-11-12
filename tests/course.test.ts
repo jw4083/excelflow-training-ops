@@ -156,7 +156,7 @@ describe("작업 9: 저장할 과정 만들기 (최종 수정 일시)", () => {
 
   it("저장된 과정은 입력 양식 값으로 되돌려 보여 줄 수 있다 (한국 시간)", () => {
     const { course } = buildCourse(valid, null, T1);
-    expect(courseToFormValues(course)).toEqual(valid);
+    expect(courseToFormValues(course)).toEqual({ ...valid, startTime: "", cancelDeadline: "" }); // 새 선택 칸은 빈칸으로 돌아온다
     expect(courseToFormValues(null)).toEqual(EMPTY_COURSE_FORM);
   });
 
@@ -179,7 +179,7 @@ describe("작업 9: 저장소에 저장하고 다시 읽기", () => {
   it("저장한 과정이 파일에 남고, 새 저장소로 열어도 같은 입력 양식이 나온다", async () => {
     await store.commit({ course: buildCourse(valid, null, T1).course });
     const reopened = new FileStore(path.join(dir, "db.json"));
-    expect(courseToFormValues(await reopened.getCourse())).toEqual(valid);
+    expect(courseToFormValues(await reopened.getCourse())).toEqual({ ...valid, startTime: "", cancelDeadline: "" });
     expect((await reopened.getCourse())?.updatedAt).toBe(T1);
   });
 });

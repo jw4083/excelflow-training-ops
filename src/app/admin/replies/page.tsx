@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { adminSubmitReplyAction } from "@/app/actions/adminReply";
+import { acknowledgeCancelAction, adminSubmitReplyAction } from "@/app/actions/adminReply";
 import { ReplyForm } from "@/app/trainee/reply-form";
 import {
   buildReplyRows,
@@ -64,6 +64,7 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
     none: summary.none,
     attend: summary.attend,
     absent: summary.absent,
+    cancelled: summary.cancelled,
   };
 
   return (
@@ -86,7 +87,7 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
               <FillPanel
                 key={v.id}
                 target={toPerson(v)}
-                reasonLabel={v.status === "불참" ? "불참" : "직접 제외"}
+                reasonLabel={v.status === "불참" ? (v.absentOrigin === "참석후취소" ? "참석 후 취소" : "불참") : "직접 제외"}
                 candidates={panelCandidates}
                 defaultDeadline={defaultDeadline}
                 exceeds={exceeds}
@@ -99,8 +100,14 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
 
       <p className="text-base">
         회신 대상 <strong>{summary.total}명</strong> 중 회신 <strong>{summary.replied}</strong> · 미회신 <strong>{summary.none}</strong> ·
-        참석 <strong>{summary.attend}</strong> · 불참 <strong>{summary.absent}</strong> · 노트북 지참 <strong>{summary.laptop}</strong>
+        참석 <strong>{summary.attend}</strong> · 불참 <strong>{summary.absent}</strong>
+        {summary.cancelled > 0 && <> (그중 참석 후 취소 <strong>{summary.cancelled}</strong>)</>} · 노트북 지참 <strong>{summary.laptop}</strong>
       </p>
+      {summary.newCancels > 0 && (
+        <p role="status" className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-base font-medium text-rose-900">
+          새 참석 취소가 {summary.newCancels}건 있습니다. 내용을 보고 「확인」을 눌러 주세요. 충원은 자동으로 하지 않으니 위 「충원이 필요한 자리」에서 정해 주세요.
+        </p>
+      )}
 
       <nav aria-label="회신 걸러보기" className="flex flex-wrap gap-2">
         {REPLY_FILTERS.map((f) => (
@@ -136,12 +143,13 @@ async function RepliesContent({ searchParams }: { searchParams: SearchParams }) 
 
 const KIND_STYLE = {
   참석: "bg-emerald-100 text-emerald-900 dark:bg-emerald-900 dark:text-emerald-100",
+  // 참석 후 취소는 처음부터 불참과 다른 색·글자로 구분한다
   불참: "bg-red-100 text-red-900 dark:bg-red-900 dark:text-red-100",
   미회신: "bg-zinc-200 text-zinc-800 dark:bg-zinc-700 dark:text-zinc-100",
 } as const;
 
 function ReplyCard({ row }: { row: ReplyRow }) {
-  const { trainee, reply, kind, deadline } = row;
+  const { trainee, reply, kind, deadline, cancelled, newCancel } = row;
   return (
     <li className="flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800">
       <div className="flex flex-wrap items-center gap-2">
@@ -150,6 +158,11 @@ function ReplyCard({ row }: { row: ReplyRow }) {
           {trainee.dept} · {trainee.empNo}
         </p>
         <span className={`rounded-full px-3 py-1 text-sm font-semibold ${KIND_STYLE[kind]}`}>{kind}</span>
+        {cancelled && <span className="rounded-full bg-rose-100 px-3 py-1 text-sm font-semibold text-rose-900">참석 후 취소</span>}
+        {trainee.status === "불참" && trainee.absentOrigin === "시작후불참" && (
+          <span className="rounded-full bg-zinc-200 px-3 py-1 text-sm font-semibold text-zinc-800">교육 시작 후 불참</span>
+        )}
+        {newCancel && <span className="rounded-full bg-rose-600 px-3 py-1 text-sm font-bold text-white">새 취소</span>}
         {trainee.status === "불참" && trainee.replacedBy && (
           <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-900">충원 확정</span>
         )}
@@ -177,7 +190,17 @@ function ReplyCard({ row }: { row: ReplyRow }) {
           value={deadline ? `${deadline.text}${deadline.personal ? " (개별 기한)" : ""}${deadline.passed ? " · 지남" : ""}` : "미정"}
         />
         <Item label="제출 일시" value={reply ? formatKst(reply.submittedAt) : "-"} />
+        {cancelled && trainee.cancelledAt && <Item label="참석 취소 일시" value={formatKst(trainee.cancelledAt)} />}
+        {cancelled && trainee.cancelSeenAt && <Item label="담당자 확인" value={formatKst(trainee.cancelSeenAt)} />}
       </dl>
+
+      {newCancel && (
+        <form action={acknowledgeCancelAction.bind(null, trainee.id)}>
+          <button type="submit" className="h-11 rounded-lg border border-rose-400 bg-white px-4 text-base font-semibold text-rose-900 hover:bg-rose-50">
+            확인 (새 취소 표시 끄기)
+          </button>
+        </form>
+      )}
 
       {/* 회신 기한이 지나도 항상 쓸 수 있다 (PRD M2-8) */}
       <details className="rounded-2xl border border-zinc-200 bg-white px-4 py-2 dark:border-zinc-800">

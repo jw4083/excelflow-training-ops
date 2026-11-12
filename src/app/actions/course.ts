@@ -31,6 +31,8 @@ export async function saveCourse(_prev: CourseFormState, formData: FormData): Pr
     place: read(formData, "place"),
     notice: read(formData, "notice"),
     replyDeadline: read(formData, "replyDeadline"),
+    startTime: read(formData, "startTime"),
+    cancelDeadline: read(formData, "cancelDeadline"),
   };
 
   const store = getStore();

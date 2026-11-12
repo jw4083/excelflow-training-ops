@@ -27,6 +27,8 @@ export interface Course {
   place: string; // 장소
   notice: string; // 안내문 (여러 줄)
   replyDeadline: string; // 회신 기한 (일시) — 개별 기한이 없는 교육생에게 적용
+  startTime?: string; // 교육 시작 시각 "HH:mm" (한국 시간). 시작일과 합쳐 "교육 시작 순간"이 된다. 예전 데이터에는 없다
+  cancelDeadline?: string; // 참석 취소 마감 (일시). 회신 기한 ≤ 취소 마감 ≤ 교육 시작. 없으면 회신 기한 뒤 취소 불가(예전 동작)
   capacity?: number; // 정원 = 추첨 때 입력한 선발 인원(1차 선별자 포함). 추첨 전에는 없음 (PRD M1-10)
   updatedAt: string; // 최종 수정 일시 — 교육생 화면 맨 위에 표시 (PRD M2-5)
 }
@@ -36,6 +38,13 @@ export interface Course {
 /** "선정"이 된 경로. 선별 취소는 "선별"로 선정된 사람만 할 수 있다 (PRD M1-3). */
 export const SELECTED_VIA = ["선별", "추첨", "충원", "수기"] as const;
 export type SelectedVia = (typeof SELECTED_VIA)[number];
+
+/**
+ * 불참 경위: 처음부터 불참으로 회신 / 참석으로 회신했다가 취소 / 교육 시작 이후 담당자가 불참 처리(실제 결석과 섞이지 않게 따로 표시).
+ * 사전 취소("참석후취소")만 담당자 화면의 "새 취소" 표시 대상이다.
+ */
+export const ABSENT_ORIGINS = ["회신불참", "참석후취소", "시작후불참"] as const;
+export type AbsentOrigin = (typeof ABSENT_ORIGINS)[number];
 
 /** 교육생. 지우지 않고 상태만 바꾼다 (PRD M1-7). */
 export interface Trainee {
@@ -51,6 +60,9 @@ export interface Trainee {
   replacedFor?: string; // 이 사람이 충원으로 들어간 대상(불참·제외자)의 id
   replyDeadline?: string; // 개별 회신 기한 (충원자·수기 추가자·추첨 선정자). 없으면 과정 기한을 따름 (PRD M1-11)
   selectedVia?: SelectedVia; // "선정"이 된 경로
+  absentOrigin?: AbsentOrigin; // 불참하게 된 경위 (불참·제외 상태에서만). 예전 불참자에게는 없다("경위 미기록")
+  cancelledAt?: string; // 참석 회신 후 취소한 시각 (absentOrigin이 "참석후취소"일 때)
+  cancelSeenAt?: string; // 담당자가 이 취소를 "확인"한 시각. 없으면 담당자 화면에 "새 취소"로 표시
   loginFails: number; // 연속 로그인 실패 횟수 (5회가 되면 lockedUntil 설정, 성공하면 0)
   lockedUntil?: string; // 이 시각까지 로그인 잠금 (15분)
   createdAt: string;
@@ -102,7 +114,7 @@ export interface Reply {
 
 // ───────────────────────── 변경 이력 ─────────────────────────
 
-/** 변경 이력의 종류 9가지 */
+/** 변경 이력의 종류 10가지 ("참석취소" = 참석으로 회신한 뒤 불참으로 바꿈) */
 export const HISTORY_KINDS = [
   "추첨",
   "선정",
@@ -113,8 +125,12 @@ export const HISTORY_KINDS = [
   "수기추가",
   "회신",
   "회신대리입력",
+  "참석취소",
 ] as const;
 export type HistoryKind = (typeof HISTORY_KINDS)[number];
+
+/** 누가 바꿨는가: 교육생 본인 / 담당자(대리 입력 포함) */
+export type HistoryActor = "본인" | "담당자";
 
 /** 변경 이력. 추가만 가능하고 수정·삭제는 없다 (PRD M1-7). */
 export interface History {
@@ -124,7 +140,8 @@ export interface History {
   traineeId?: string; // 대상 교육생 (추첨처럼 여러 명이 걸린 변경은 비어 있을 수 있음)
   before: unknown; // 변경 전 내용
   after: unknown; // 변경 후 내용
-  reason?: string; // 사유 (제외, 수기 추가 등)
+  reason?: string; // 사유 (제외, 수기 추가, 참석 취소 등)
+  actor?: HistoryActor; // 회신·참석 취소 이력에만 남긴다. 예전 이력에는 없어서 종류로 추정한다 (historyView.actorOf)
 }
 
 // ───────────────────────── 저장되는 전체 모양 ─────────────────────────

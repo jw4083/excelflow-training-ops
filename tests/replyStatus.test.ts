@@ -61,7 +61,7 @@ describe("작업 19: 회신 현황", () => {
   });
 
   it("요약 숫자: 대상, 회신/미회신, 참석/불참, 노트북 지참", () => {
-    expect(summarizeReplies(rows)).toEqual({ total: 5, replied: 4, none: 1, attend: 2, absent: 2, laptop: 1 });
+    expect(summarizeReplies(rows)).toEqual({ total: 5, replied: 4, none: 1, attend: 2, absent: 2, cancelled: 0, newCancels: 0, laptop: 1 });
   });
 
   it("걸러 보기", () => {
@@ -84,6 +84,6 @@ describe("작업 19: 회신 현황", () => {
   });
 
   it("대상이 없으면 빈 목록과 0 요약", () => {
-    expect(summarizeReplies(buildReplyRows([], [], null, NOW))).toEqual({ total: 0, replied: 0, none: 0, attend: 0, absent: 0, laptop: 0 });
+    expect(summarizeReplies(buildReplyRows([], [], null, NOW))).toEqual({ total: 0, replied: 0, none: 0, attend: 0, absent: 0, cancelled: 0, newCancels: 0, laptop: 0 });
   });
 });

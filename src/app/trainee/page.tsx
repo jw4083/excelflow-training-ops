@@ -4,8 +4,8 @@
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import { Suspense } from "react";
-import { describeMyStatus, hasReplySection, lastUpdatedText, replyDeadlineFor, type StatusTone } from "@/domain/traineeView";
-import { replyFormState } from "@/domain/replyRules";
+import { cancelDeadlineFor, describeMyStatus, hasReplySection, lastUpdatedText, replyDeadlineFor, type StatusTone } from "@/domain/traineeView";
+import { selfReplyMode } from "@/domain/replyRules";
 import { formatKst, formatPeriodKo } from "@/lib/datetime";
 import { Mascot, MascotCredit } from "@/components/Mascot";
 import { ReplyForm } from "./reply-form";
@@ -50,8 +50,11 @@ async function TraineeGate() {
       const msg = describeMyStatus(me);
       const nowIso = new Date().toISOString();
       const deadline = replyDeadlineFor(me, course, nowIso);
-      const formState = replyFormState(me, course, nowIso);
       const reply = await getStore().getReply(me.id);
+      // 지금 할 수 있는 회신: 자유 회신(기한 전) / 불참 변경만(기한 후·취소 마감 전 참석자) / 닫힘(이유 안내). 서버 검사와 같은 함수다
+      const mode = selfReplyMode(me, course, reply, nowIso);
+      const cancelDeadline = cancelDeadlineFor(course, nowIso);
+      const showCancelDeadline = cancelDeadline && (me.status === "선정" || me.absentOrigin === "참석후취소");
       const updated = lastUpdatedText(course);
       const tone = TONE[msg.tone];
       return (
@@ -90,7 +93,10 @@ async function TraineeGate() {
               <dl className="mt-3 grid gap-1 text-base">
                 <div className="flex gap-2">
                   <dt className="w-12 shrink-0 text-peach-700">일정</dt>
-                  <dd className="break-keep">{formatPeriodKo(course.startDate, course.endDate)}</dd>
+                  <dd className="break-keep">
+                    {formatPeriodKo(course.startDate, course.endDate)}
+                    {course.startTime && ` · ${course.startTime} 시작`}
+                  </dd>
                 </div>
                 <div className="flex gap-2">
                   <dt className="w-12 shrink-0 text-peach-700">장소</dt>
@@ -111,9 +117,17 @@ async function TraineeGate() {
               ) : (
                 <p className="mt-2 text-base">회신 기한은 아직 정해지지 않았습니다.</p>
               )}
+              {showCancelDeadline && (
+                <p className="mt-1 text-base">
+                  참석 취소 마감: {cancelDeadline.text}{" "}
+                  <strong className="font-bold text-primary">({cancelDeadline.remaining})</strong>
+                </p>
+              )}
               <div className="mt-4">
-                {formState.open ? (
+                {mode.mode !== "closed" ? (
                   <ReplyForm
+                    key={mode.mode}
+                    mode={mode.mode}
                     defaults={{
                       attend: reply?.attend,
                       absentType: reply?.absentType,
@@ -125,7 +139,7 @@ async function TraineeGate() {
                     }}
                   />
                 ) : (
-                  <p className="text-base font-medium text-red-700">{formState.reason}</p>
+                  <p className="text-base font-medium text-red-700">{mode.reason}</p>
                 )}
               </div>
             </div>

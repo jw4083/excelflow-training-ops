@@ -18,7 +18,7 @@ export interface StatusMessage {
  * - 충원이 확정된 불참자(`replacedBy`가 있음)는 참석으로 바꿀 수 없다고 안내한다 (PRD M2-7). 누구로 충원됐는지는 보여주지 않는다.
  */
 export function describeMyStatus(
-  trainee: Pick<Trainee, "status" | "waitNo" | "replacedBy">,
+  trainee: Pick<Trainee, "status" | "waitNo" | "replacedBy"> & Partial<Pick<Trainee, "absentOrigin">>,
 ): StatusMessage {
   switch (trainee.status) {
     case "신청":
@@ -52,7 +52,13 @@ export function describeMyStatus(
             title: "불참으로 처리되었고 자리가 충원되었습니다",
             detail: "이미 충원되어 참석으로 바꿀 수 없습니다. 담당자에게 문의해 주세요.",
           }
-        : {
+        : trainee.absentOrigin === "참석후취소"
+          ? {
+              tone: "bad",
+              title: "참석을 취소하여 불참으로 처리되었습니다",
+              detail: "회신 기한 전이라면 아래 「회신」에서 다시 참석으로 바꿀 수 있습니다. 기한이 지났다면 담당자에게 문의해 주세요.",
+            }
+          : {
             tone: "bad",
             title: "불참으로 처리되어 있습니다",
             detail: "참석할 수 있게 되었다면 회신 기한 안에 다시 회신해 주세요.",
@@ -112,6 +118,23 @@ export function replyDeadlineFor(
     personal: trainee.replyDeadline !== undefined,
     remaining: remainingLabel(iso, now),
   };
+}
+
+/**
+ * 교육 시작 순간 (한국 시간 시작일 + 시작 시각, "+09:00" ISO). 시작 시각이 없는 예전 과정이거나 값이 잘못되었으면 null.
+ * 교육생 본인 변경은 이 순간부터 막고, 참석 취소 마감은 이 순간을 넘을 수 없다.
+ */
+export function courseStartIso(course: Partial<Pick<Course, "startDate" | "startTime">> | null): string | null {
+  if (!course?.startDate || !course.startTime) return null;
+  const iso = `${course.startDate}T${course.startTime}:00+09:00`;
+  return Number.isNaN(Date.parse(iso)) ? null : iso;
+}
+
+/** 참석 취소 마감의 화면 표시 (과정에 취소 마감이 없으면 null) */
+export function cancelDeadlineFor(course: Partial<Pick<Course, "cancelDeadline">> | null, now: string): DeadlineView | null {
+  const iso = course?.cancelDeadline;
+  if (!iso || Number.isNaN(Date.parse(iso))) return null;
+  return { iso, text: formatKst(iso), passed: Date.parse(now) > Date.parse(iso), personal: false, remaining: remainingLabel(iso, now) };
 }
 
 /** 맨 위에 보여줄 "최종 수정 일시" (PRD M2-5): 교육 안내(과정 정보)를 마지막으로 고친 시각. 아직 없으면 null */

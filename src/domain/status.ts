@@ -44,6 +44,8 @@ export interface TransitionContext {
   waitlistCount?: number;
   /** 담당자가 교육생 대신 입력하는 경우 (회신 기한이 지나도 가능, PRD M2-8) */
   byAdmin?: boolean;
+  /** 회신 기한·참석 취소 마감 판단을 이미 `replyRules`에서 마쳤다 (기한 뒤 참석 취소처럼 기한 검사를 다시 하면 안 되는 경우) */
+  windowChecked?: boolean;
 }
 
 export type TransitionResult = { ok: true; to: Status } | { ok: false; reason: string };
@@ -96,7 +98,7 @@ export function checkTransition(
         return fail("충원이 확정되어 참석으로 바꿀 수 없습니다. 담당자에게 문의하세요.");
       }
       // 회신 기한이 지나면 교육생은 제출할 수 없다. 담당자 대리 입력은 기한이 지나도 가능 (PRD M2-4, M2-8)
-      if (!context.byAdmin) {
+      if (!context.byAdmin && !context.windowChecked) {
         const deadline = Date.parse(context.replyDeadline ?? "");
         if (Number.isNaN(deadline)) return fail("회신 기한이 정해져 있지 않습니다. 담당자에게 문의하세요.");
         if (Date.parse(context.now ?? new Date().toISOString()) > deadline) {

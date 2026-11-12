@@ -1,5 +1,5 @@
 "use client";
-// 과정 정보 입력 양식 (DESIGN 2.3): 과정명, 일정(시작·종료), 장소, 안내문, 회신 기한 + 저장 버튼 + 최종 수정 일시
+// 과정 정보 입력 양식 (DESIGN 2.3): 과정명, 일정(시작일·시작 시각·종료일), 장소, 안내문, 회신 기한, 참석 취소 마감 + 저장 버튼 + 최종 수정 일시
 import { useActionState, type ReactNode } from "react";
 import { saveCourse, type CourseFormState } from "@/app/actions/course";
 import type { CourseFormField } from "@/domain/course";
@@ -51,9 +51,12 @@ export function CourseForm({ initial }: { initial: CourseFormState }) {
         <input id="name" name="name" type="text" defaultValue={v.name} maxLength={100} className={inputClass} {...aria("name")} />
       </Field>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
         <Field name="startDate" label="시작일" error={e.startDate}>
           <input id="startDate" name="startDate" type="date" defaultValue={v.startDate} className={inputClass} {...aria("startDate")} />
+        </Field>
+        <Field name="startTime" label="시작 시각 (한국 시간)" error={e.startTime}>
+          <input id="startTime" name="startTime" type="time" defaultValue={v.startTime ?? ""} className={inputClass} {...aria("startTime")} />
         </Field>
         <Field name="endDate" label="종료일" error={e.endDate}>
           <input id="endDate" name="endDate" type="date" defaultValue={v.endDate} className={inputClass} {...aria("endDate")} />
@@ -82,6 +85,15 @@ export function CourseForm({ initial }: { initial: CourseFormState }) {
         error={e.replyDeadline}
       >
         <input id="replyDeadline" name="replyDeadline" type="datetime-local" defaultValue={v.replyDeadline} className={inputClass} {...aria("replyDeadline")} />
+      </Field>
+
+      <Field
+        name="cancelDeadline"
+        label="참석 취소 마감 (한국 시간, 선택)"
+        hint="회신 기한이 지난 뒤에도 참석으로 회신한 교육생은 이 시각까지 불참으로 바꿀 수 있습니다(사유 필수). 회신 기한과 교육 시작 사이로 정해 주세요. 비워 두면 회신 기한 뒤에는 바꿀 수 없습니다."
+        error={e.cancelDeadline}
+      >
+        <input id="cancelDeadline" name="cancelDeadline" type="datetime-local" defaultValue={v.cancelDeadline ?? ""} className={inputClass} {...aria("cancelDeadline")} />
       </Field>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

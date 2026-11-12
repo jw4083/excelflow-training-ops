@@ -11,6 +11,7 @@ export interface ReplyFormState {
   ok?: boolean;
   message?: string; // 성공 또는 실패 안내
   errors?: Partial<Record<ReplyField, string>>;
+  needsConfirm?: boolean; // 참석 → 불참 변경에 최종 확인이 필요함 (화면이 확인 단계를 보여 준다)
 }
 
 const text = (formData: FormData, key: string) => {
@@ -32,9 +33,12 @@ export async function submitReplyAction(_prev: ReplyFormState, formData: FormDat
     laptop: yesNo(text(formData, "laptop")),
     roommateName: text(formData, "roommateName"),
     roommateDept: text(formData, "roommateDept"),
-  });
-  if (!result.ok) return { message: result.reason, errors: result.errors };
+  }, { confirmed: text(formData, "confirm") === "yes" });
+  if (!result.ok) return { message: result.reason, errors: result.errors, needsConfirm: result.needsConfirm };
 
   revalidatePath(TRAINEE_PATH);
+  if (result.cancelled) {
+    return { ok: true, message: result.unchanged ? "이미 불참으로 변경되어 있습니다." : "불참으로 변경되었습니다. 담당자에게 바로 전달됩니다." };
+  }
   return { ok: true, message: "회신이 저장되었습니다. 기한 전에는 언제든 다시 고칠 수 있습니다." };
 }

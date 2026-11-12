@@ -17,7 +17,8 @@ const STATUS_STYLE: Record<Trainee["status"], string> = {
   제외: "bg-zinc-300 text-zinc-800 dark:bg-zinc-600 dark:text-zinc-100",
 };
 
-type Row = Pick<Trainee, "id" | "empNo" | "name" | "dept" | "status" | "isManual" | "waitNo" | "selectedVia">;
+type Row = Pick<Trainee, "id" | "empNo" | "name" | "dept" | "status" | "isManual" | "waitNo" | "selectedVia"> &
+  Partial<Pick<Trainee, "absentOrigin">>;
 
 export function RosterTable({
   page,
@@ -97,7 +98,7 @@ export function RosterTable({
                   )}
                 </td>
                 <td className="px-4 py-3 tabular-nums">{t.status === "대기" && t.waitNo ? `${t.waitNo}번` : ""}</td>
-                <td className="px-4 py-3">{replyLabel(t.status, replies.get(t.id))}</td>
+                <td className="px-4 py-3">{replyLabel(t.status, replies.get(t.id), t.absentOrigin)}</td>
                 {showActions && (
                   <td className="px-4 py-1">
                     <div className="flex flex-wrap items-start gap-2">

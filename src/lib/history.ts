@@ -11,8 +11,10 @@ import {
 } from "@/domain/status";
 import {
   EMP_NO_PATTERN,
+  type AbsentOrigin,
   type DbData,
   type History,
+  type HistoryActor,
   type HistoryKind,
   type SelectedVia,
   type Status,
@@ -27,6 +29,8 @@ export interface StatusPatch {
   replacedBy?: string; // 이 자리에 충원된 교육생 id (충원 확정)
   replacedFor?: string; // 이 사람이 충원으로 들어간 대상 id
   replyDeadline?: string; // 개별 회신 기한
+  absentOrigin?: AbsentOrigin; // 불참 경위 (바꿀 상태가 "불참"일 때만 저장됨)
+  cancelledAt?: string; // 참석 취소 시각 (불참 경위가 "참석후취소"일 때)
 }
 
 /** 수기 추가로 새로 넣는 교육생 (PRD M1-6: 사번·이름·부서·추가 사유 모두 필수) */
@@ -48,6 +52,10 @@ export interface StatusChangeInput {
   patch?: StatusPatch;
   reason?: string; // 사유 (직접제외는 필수)
   byAdmin?: boolean; // 담당자가 교육생 대신 입력 (이력 종류가 "회신대리입력"이 됨)
+  kind?: HistoryKind; // 이력 종류를 직접 정할 때 (참석 취소 = "참석취소")
+  actor?: HistoryActor; // 누가 바꿨는지 이력에 남길 때 (회신·참석 취소)
+  windowChecked?: boolean; // 기한 판단을 이미 마쳤음 (reply.ts가 참석 취소 허용 구간을 판단한 뒤 넘긴다)
+  historyExtra?: { before: Record<string, unknown>; after: Record<string, unknown> }; // 상태와 함께 이력의 변경 전/후에 덧붙일 내용 (회신 내용 등)
 }
 
 export interface ChangeOptions {
@@ -60,7 +68,17 @@ export type ChangeResult =
   | { ok: false; reason: string; failedIndex?: number };
 
 // 상태와 함께 이력에 "변경 전 → 변경 후"로 남기는 항목
-const TRACKED = ["status", "waitNo", "selectedVia", "replacedBy", "replacedFor", "replyDeadline"] as const;
+const TRACKED = [
+  "status",
+  "waitNo",
+  "selectedVia",
+  "replacedBy",
+  "replacedFor",
+  "replyDeadline",
+  "absentOrigin",
+  "cancelledAt",
+  "cancelSeenAt",
+] as const;
 
 // 선정이 되는 동작의 기본 "선정 경로"
 const VIA_BY_ACTION: Partial<Record<Action, SelectedVia>> = {
@@ -147,6 +165,7 @@ function buildOne(data: DbData, input: StatusChangeInput, now: string, newId: ()
     drawCount: data.draws.length,
     waitlistCount: data.trainees.filter((t) => t.status === "대기").length,
     byAdmin: input.byAdmin,
+    windowChecked: input.windowChecked,
   };
   const result = checkTransition(action, existing, input.to, context);
   if (!result.ok) return fail(result.reason);
@@ -182,6 +201,19 @@ function buildOne(data: DbData, input: StatusChangeInput, now: string, newId: ()
     } else {
       delete next.waitNo;
     }
+    // 불참 경위·참석 취소 표시: 불참이 될 때 새로 정하고, 다시 선정 등으로 돌아가면 지운다.
+    // 제외(충원 확정 포함)로 갈 때는 남겨 두어 "어떤 불참 자리였는지"를 명단에서 볼 수 있게 한다
+    if (result.to === "불참") {
+      delete next.absentOrigin;
+      delete next.cancelledAt;
+      delete next.cancelSeenAt;
+      if (patch.absentOrigin) next.absentOrigin = patch.absentOrigin;
+      if (patch.cancelledAt) next.cancelledAt = patch.cancelledAt;
+    } else if (result.to !== "제외") {
+      delete next.absentOrigin;
+      delete next.cancelledAt;
+      delete next.cancelSeenAt;
+    }
     // 선정 경로: 선정이 되는 동작이면 새로 기록하고, 선별 취소·추첨에서 선정이 아니게 되면 지운다.
     // 불참·제외·참석 재회신은 원래 경로를 그대로 둔다 (불참 후 다시 선정되어도 원래 경로 유지)
     const via = VIA_BY_ACTION[action];
@@ -192,15 +224,18 @@ function buildOne(data: DbData, input: StatusChangeInput, now: string, newId: ()
   }
 
   const { before, after } = diff(existing, next);
+  const extraBefore = input.historyExtra?.before ?? {};
+  const extraAfter = input.historyExtra?.after ?? {};
   const entry: History = {
     id: newId(),
     at: now,
-    kind: kindFor(action, input.byAdmin === true),
+    kind: input.kind ?? kindFor(action, input.byAdmin === true),
     traineeId: next.id,
-    before,
-    after,
+    before: before === null && Object.keys(extraBefore).length === 0 ? null : { ...(before ?? {}), ...extraBefore },
+    after: { ...after, ...extraAfter },
   };
   if (input.reason?.trim()) entry.reason = input.reason.trim();
+  if (input.actor) entry.actor = input.actor;
   return { ok: true, trainee: next, entry };
 }
 

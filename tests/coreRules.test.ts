@@ -70,7 +70,8 @@ describe("작업 23: 불참 → 알림 → 충원 → 재회신 흐름 (#26 #27 
     await submitReply(store, "s2", attend, { now: NOW }); // 충원 전이라 참석으로 복귀 가능
     expect((await alertOf()).total).toBe(0);
 
-    await submitReply(store, "s2", absent, { now: AFTER_COURSE_DEADLINE, byAdmin: true });
+    // 참석 → 불참은 참석 취소라 최종 확인이 필요하다 (담당자 대리 입력도 같음)
+    await submitReply(store, "s2", absent, { now: AFTER_COURSE_DEADLINE, byAdmin: true, confirmed: true });
     expect((await alertOf()).total).toBe(1);
   });
 

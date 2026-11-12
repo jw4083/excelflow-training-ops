@@ -1,6 +1,6 @@
 // 담당자 명단 화면의 "보기" 규칙 (PLAN 작업 11, DESIGN 2.3 "명단"): 상태별 걸러 보기, 정렬, 쪽 나누기, 회신 여부 표기.
 // 화면과 저장소를 모르는 순수 코드다.
-import { STATUSES, type Reply, type Status, type Trainee } from "./types";
+import { STATUSES, type AbsentOrigin, type Reply, type Status, type Trainee } from "./types";
 
 /** 상태 탭: "전체" + 상태 6종 */
 export const ROSTER_FILTERS = ["전체", ...STATUSES] as const;
@@ -69,8 +69,27 @@ export function paginate<T>(items: T[], page: number, pageSize: number = PAGE_SI
  * "회신 여부" 칸에 보일 말. 회신은 선정·불참 상태의 사람만 하므로 그 밖의 상태는 "-"다.
  * 선정·불참 상태인데 회신이 없으면 "미회신".
  */
-export function replyLabel(status: Status, reply: Pick<Reply, "attend"> | null | undefined): string {
+export function replyLabel(
+  status: Status,
+  reply: Pick<Reply, "attend"> | null | undefined,
+  origin?: AbsentOrigin,
+): string {
   if (status !== "선정" && status !== "불참") return "-";
   if (!reply) return "미회신";
-  return reply.attend ? "참석" : "불참";
+  if (reply.attend) return "참석";
+  // 처음부터 불참과 참석 후 취소를 구분해 보여 준다 (경위가 없는 예전 데이터는 그냥 "불참")
+  if (status === "불참" && origin === "참석후취소") return "불참(참석 후 취소)";
+  if (status === "불참" && origin === "시작후불참") return "불참(시작 후)";
+  return "불참";
+}
+
+/** 불참 경위를 사람이 읽는 말로. 불참·제외가 아니거나 경위가 없으면 빈 글자 (불참인데 경위가 없으면 "경위 미기록") */
+export const ABSENT_ORIGIN_LABELS: Record<AbsentOrigin, string> = {
+  회신불참: "처음부터 불참",
+  참석후취소: "참석 후 취소",
+  시작후불참: "교육 시작 후 불참",
+};
+export function absentOriginLabel(t: Pick<Trainee, "status"> & Partial<Pick<Trainee, "absentOrigin">>): string {
+  if (t.absentOrigin && (t.status === "불참" || t.status === "제외")) return ABSENT_ORIGIN_LABELS[t.absentOrigin];
+  return t.status === "불참" ? "경위 미기록" : "";
 }

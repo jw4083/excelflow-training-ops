@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { ReplyFormState } from "@/app/actions/reply";
 import { requireAdmin } from "@/lib/auth";
+import { acknowledgeCancel } from "@/lib/cancel";
 import { submitReply } from "@/lib/reply";
 import { getStore } from "@/store";
 
@@ -30,9 +31,16 @@ export async function adminSubmitReplyAction(
       roommateName: text(formData, "roommateName"),
       roommateDept: text(formData, "roommateDept"),
     },
-    { byAdmin: true },
+    { byAdmin: true, confirmed: text(formData, "confirm") === "yes" },
   );
-  if (!result.ok) return { message: result.reason, errors: result.errors };
+  if (!result.ok) return { message: result.reason, errors: result.errors, needsConfirm: result.needsConfirm };
   revalidatePath("/admin", "layout"); // 회신 현황·배너·배지를 새 내용으로 다시 그린다
-  return { ok: true, message: "담당자 입력으로 저장했습니다." };
+  return { ok: true, message: result.cancelled ? "담당자 입력으로 참석을 취소(불참)했습니다." : "담당자 입력으로 저장했습니다." };
+}
+
+/** 새 참석 취소를 "확인"으로 표시한다 (상태·빈자리는 바뀌지 않는다) */
+export async function acknowledgeCancelAction(traineeId: string): Promise<void> {
+  await requireAdmin();
+  await acknowledgeCancel(getStore(), traineeId);
+  revalidatePath("/admin", "layout");
 }

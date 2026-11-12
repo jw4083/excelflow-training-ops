@@ -1,9 +1,9 @@
 // 변경 이력 화면의 "보기" 규칙 (PLAN 작업 14, DESIGN 2.3 "변경 이력"): 종류별 걸러 보기, 최신순 정렬, 변경 내용을 읽기 쉬운 문장으로 바꾸기.
 // 이력은 추가만 되고 수정·삭제할 수 없으므로(PRD M1-7), 여기에는 "읽는" 규칙만 있다. 화면·저장소를 모르는 순수 코드다.
 import { formatKst } from "@/lib/datetime";
-import { HISTORY_KINDS, type History, type HistoryKind } from "./types";
+import { HISTORY_KINDS, type History, type HistoryActor, type HistoryKind } from "./types";
 
-/** 종류 탭: "전체" + 이력 종류 9종 */
+/** 종류 탭: "전체" + 이력 종류 10종 */
 export const HISTORY_FILTERS = ["전체", ...HISTORY_KINDS] as const;
 export type HistoryFilter = (typeof HISTORY_FILTERS)[number];
 
@@ -60,6 +60,9 @@ const FIELDS: Record<string, [label: string, show: (value: unknown, nameOf?: Nam
   laptop: ["노트북 지참", (v) => (v ? "예" : "아니오")],
   roommateName: ["룸메이트 이름", (v) => String(v)],
   roommateDept: ["룸메이트 부서", (v) => String(v)],
+  absentOrigin: ["불참 경위", (v) => (v === "참석후취소" ? "참석 후 취소" : v === "회신불참" ? "처음부터 불참" : v === "시작후불참" ? "교육 시작 후 불참" : String(v))],
+  cancelledAt: ["참석 취소 일시", (v) => (typeof v === "string" && !Number.isNaN(Date.parse(v)) ? formatKst(v) : String(v))],
+  cancelSeenAt: ["담당자 확인", (v) => (typeof v === "string" && !Number.isNaN(Date.parse(v)) ? formatKst(v) : String(v))],
   drawId: "hide", // 기계용 번호는 사람이 읽을 필요가 없다
 };
 
@@ -89,6 +92,17 @@ export function historyTarget(
 ): { label: string; whole: boolean } {
   if (!entry.traineeId) return { label: entry.kind === "추첨" ? "추첨 전체" : "전체", whole: true };
   return { label: nameOf(entry.traineeId) ?? "(알 수 없음)", whole: false };
+}
+
+/**
+ * 누가 바꿨는가: 이력에 적힌 값이 있으면 그것, 없으면(예전 이력) 종류로 추정한다.
+ * 회신·불참은 교육생 본인, 회신대리입력은 담당자. 추첨·충원 같은 담당자 작업은 표시하지 않는다(null).
+ */
+export function actorOf(entry: Pick<History, "kind"> & { actor?: HistoryActor }): HistoryActor | null {
+  if (entry.actor) return entry.actor;
+  if (entry.kind === "회신대리입력") return "담당자";
+  if (entry.kind === "회신" || entry.kind === "불참") return "본인";
+  return null;
 }
 
 export type { HistoryKind };

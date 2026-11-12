@@ -28,7 +28,7 @@ describe("작업 8: 충원이 필요한 자리 건수", () => {
   });
 
   it("해당자가 없으면 모두 0이다 (배너·배지가 나타나지 않음)", () => {
-    expect(vacancyAlert([])).toEqual({ total: 0, absent: 0, excluded: 0, names: [] });
+    expect(vacancyAlert([])).toEqual({ total: 0, absent: 0, excluded: 0, names: [], newCancels: 0 });
     expect(vacancyAlert([t("신청"), t("선정"), t("대기"), t("미선정")]).total).toBe(0);
   });
 
@@ -45,7 +45,7 @@ describe("작업 8: 충원이 필요한 자리 건수", () => {
   });
 
   it("결과에는 불참 상세 사유 같은 항목이 들어 있지 않다 (이름과 건수만)", () => {
-    expect(Object.keys(vacancyAlert([t("불참")])).sort()).toEqual(["absent", "excluded", "names", "total"]);
+    expect(Object.keys(vacancyAlert([t("불참")])).sort()).toEqual(["absent", "excluded", "names", "newCancels", "total"]);
   });
 });
 

@@ -3,7 +3,7 @@
 // - 사번 열은 글자(텍스트) 서식이다: 엑셀에서 열어도 앞자리 0이 사라지지 않는다 (PLAN SC-9).
 // - 불참 상세 사유는 대외비라, 이 파일을 받을 수 있는 사람은 로그인한 담당자뿐이다 (받는 길은 app/admin/export/route.ts).
 import ExcelJS from "exceljs";
-import { replyLabel } from "./roster";
+import { absentOriginLabel, replyLabel } from "./roster";
 import { formatKst } from "@/lib/datetime";
 import type { Reply, Trainee } from "./types";
 
@@ -22,6 +22,8 @@ export const EXPORT_COLUMNS = [
   { header: "참석", width: 8 },
   { header: "불참 구분", width: 10 },
   { header: "불참 상세", width: 36 },
+  { header: "불참 경위", width: 14 },
+  { header: "참석 취소 일시", width: 18 },
   { header: "노트북", width: 10 },
   { header: "룸메이트 이름", width: 14 },
   { header: "룸메이트 부서", width: 18 },
@@ -39,7 +41,7 @@ export function buildExportRows(trainees: Trainee[], replies: Reply[], courseDea
     .sort((a, b) => a.empNo.localeCompare(b.empNo))
     .map((t) => {
       const reply = byId.get(t.id);
-      const label = replyLabel(t.status, reply);
+      const label = replyLabel(t.status, reply, t.absentOrigin);
       const deadline = t.replyDeadline ?? courseDeadline;
       const attended = reply?.attend === true;
       const absent = reply?.attend === false;
@@ -55,6 +57,8 @@ export function buildExportRows(trainees: Trainee[], replies: Reply[], courseDea
         attended ? "참석" : absent ? "불참" : "",
         absent ? (reply?.absentType ?? "") : "",
         absent ? (reply?.absentDetail ?? "") : "",
+        absentOriginLabel(t),
+        t.cancelledAt && (t.status === "불참" || t.status === "제외") ? formatKst(t.cancelledAt) : "",
         attended ? (reply?.laptop ? "지참" : "미지참") : "",
         attended ? (reply?.roommateName ?? "") : "",
         attended ? (reply?.roommateDept ?? "") : "",

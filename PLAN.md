@@ -257,3 +257,4 @@ PRD 1~2번 참고. 현행은 사내 시스템, 선별·추첨용 엑셀, 확정 
 | 버전 | 날짜 | 내용 | 작성자 |
 |------|------|------|--------|
 | 0.1 | 2026-11-12 | 첫 작성 (PRD 기반) | 조우진 |
+| 0.2 | 2026-11-12 | 추가 기능 "참석 회신 후 교육 전 불참 변경(참석 취소)" 반영: 과정에 시작 시각·참석 취소 마감 추가, `Trainee.absentOrigin/cancelledAt/cancelSeenAt`, 이력 종류 "참석취소"와 `actor`, 담당자 "새 취소" 표시, 기한 판단은 `domain/replyRules.ts`(selfReplyMode) 한 곳, 서버 처리는 `lib/reply.ts`의 transaction. 테스트 `tests/cancelAttendance.test.ts`, `tests/concurrency.test.ts` | 조우진 |
