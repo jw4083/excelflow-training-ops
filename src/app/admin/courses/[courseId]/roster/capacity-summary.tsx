@@ -5,14 +5,10 @@ import type { CapacitySummary } from "@/domain/capacity";
 function Stat({ label, value, tone = "normal" }: { label: string; value: string; tone?: "normal" | "warn" }) {
   return (
     <div
-      className={`flex flex-col gap-1 rounded-lg border px-4 py-3 ${
-        tone === "warn"
-          ? "border-red-300 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950 dark:text-red-100"
-          : "border-zinc-200 bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900"
-      }`}
+      className={`flex flex-col gap-1 rounded-2xl px-4 py-3 sm:px-5 sm:py-4 ${tone === "warn" ? "bg-red-50 text-red-900" : "bg-white"}`}
     >
-      <span className="text-sm text-zinc-600 dark:text-zinc-400">{label}</span>
-      <span className="text-xl font-bold tabular-nums">{value}</span>
+      <span className="text-sm font-medium text-zinc-600">{label}</span>
+      <span className="text-2xl font-bold tabular-nums">{value}</span>
     </div>
   );
 }

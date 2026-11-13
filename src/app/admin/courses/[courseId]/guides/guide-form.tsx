@@ -1,13 +1,13 @@
 "use client";
 // 최종 안내 등록·수정 양식: 제목, 내용, 링크(https), 버튼 글, 준비 기한, 준비 필요 여부, 공개 여부.
 // 이미 공개된 안내를 수정하면 교육생에게 "변경된 안내"로 보이므로, 저장 전에 한 번 더 확인한다.
-import { useActionState } from "react";
+import { startTransition, useActionState, useRef, useState } from "react";
 import { saveGuideAction, type GuideFormState } from "@/app/actions/guides";
 import { CourseIdField } from "@/components/admin/CourseIdField";
+import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { buttonClass, inputClass } from "@/components/ui/styles";
 import type { GuideFormField } from "@/domain/guides";
-
-const inputClass =
-  "h-12 w-full rounded-lg border border-zinc-300 bg-white px-4 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 aria-[invalid=true]:border-red-600 dark:border-zinc-700 dark:bg-zinc-900";
 
 export function GuideForm({
   initial,
@@ -30,19 +30,21 @@ export function GuideForm({
       </p>
     );
 
+  // 공개된 안내를 고칠 때만 앱 확인창으로 한 번 더 묻는다 (입력값은 확인창을 여는 순간 모아 두었다가 확인하면 보낸다)
+  const [confirming, setConfirming] = useState(false);
+  const held = useRef<FormData | null>(null);
+
   return (
     <form
       action={action}
       noValidate
       onSubmit={(event) => {
-        if (
-          wasPublished &&
-          !window.confirm("이미 공개된 안내입니다. 내용을 바꾸면 교육생에게 '변경된 안내'로 표시되고, 이미 확인한 교육생도 다시 확인해야 합니다. 저장할까요?")
-        ) {
-          event.preventDefault();
-        }
+        if (!wasPublished) return;
+        event.preventDefault();
+        held.current = new FormData(event.currentTarget);
+        setConfirming(true);
       }}
-      className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4"
+      className="flex flex-col gap-4 rounded-2xl bg-white p-5"
     >
       <CourseIdField />
       {guideId && <input type="hidden" name="guideId" value={guideId} />}
@@ -97,13 +99,28 @@ export function GuideForm({
         </p>
       )}
       <div className="flex flex-wrap gap-2">
-        <button type="submit" disabled={pending} className="h-12 rounded-lg bg-primary px-6 text-base font-semibold text-white hover:bg-primary-hover disabled:opacity-60">
-          {pending ? "저장 중…" : guideId ? "수정 저장" : "안내 등록"}
-        </button>
-        <a href={cancelHref} className="inline-flex h-12 items-center rounded-lg border border-zinc-300 px-5 text-base font-medium hover:bg-zinc-100">
+        <Button type="submit" variant="primary" size="lg" pending={pending} pendingLabel="저장 중">
+          {guideId ? "수정 저장" : "안내 등록"}
+        </Button>
+        <a href={cancelHref} className={buttonClass("secondary", "lg")}>
           취소
         </a>
       </div>
+      <ConfirmDialog
+        open={confirming}
+        title="공개된 안내를 수정할까요?"
+        confirmLabel="수정 저장"
+        onClose={() => setConfirming(false)}
+        onConfirm={() => {
+          const data = held.current;
+          setConfirming(false);
+          if (data) startTransition(() => action(data));
+        }}
+      >
+        <p className="break-keep">
+          내용이 바뀌면 교육생에게 <strong>&quot;변경된 안내&quot;</strong>로 표시되고, 이미 확인한 교육생도 다시 확인해야 합니다. (준비 완료 표시는 유지됩니다)
+        </p>
+      </ConfirmDialog>
     </form>
   );
 }

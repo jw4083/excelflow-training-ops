@@ -2,12 +2,13 @@
 // 추첨 입력 양식 (DESIGN 2.3 "추첨"): 선발 인원(정원), 대기 인원, (선택) 새 선정자 회신 기한 + 추첨 실행 버튼.
 // 입력하는 동안 "이번에 뽑는 인원 = 정원 − 현재 선정 수"를 미리 계산해 보여 주고, 0 이하이면 버튼을 막는다.
 import { CourseIdField } from "@/components/admin/CourseIdField";
-import { useActionState, useState, type ReactNode } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState, type ReactNode } from "react";
 import { runDrawAction, type DrawState } from "@/app/actions/draw";
+import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { inputClass } from "@/components/ui/styles";
+import { useToast } from "@/components/ui/Toast";
 import { MAX_DRAW_SEATS, type DrawFormField } from "@/domain/draw";
-
-const inputClass =
-  "h-12 w-full rounded-lg border border-zinc-300 bg-white px-4 text-base text-zinc-900 outline-none focus:border-primary focus:ring-2 focus:ring-primary/25 aria-[invalid=true]:border-red-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:border-zinc-300";
 
 function Field({ name, label, hint, error, children }: { name: DrawFormField; label: string; hint?: string; error?: string; children: ReactNode }) {
   return (
@@ -51,15 +52,28 @@ export function DrawForm({
   const toDraw = typed === null ? null : typed - selectedCount;
   const full = toDraw !== null && toDraw <= 0;
 
+  // 추첨은 되돌릴 수 없으므로 앱 확인창에서 한 번 더 확인한다. 확인하면 그때 모아 둔 입력값으로 서버에 보낸다.
+  const [confirming, setConfirming] = useState(false);
+  const pendingData = useRef<FormData | null>(null);
+  const [waitPreview, setWaitPreview] = useState("");
+  const toast = useToast();
+  const lastState = useRef(state);
+  useEffect(() => {
+    // 서버가 추첨을 마쳤다고 알려 준 뒤에만 완료 알림을 띄운다 (결과를 미리 보여 주지 않는다)
+    if (state !== lastState.current && state.status === "success" && state.message) toast(state.message);
+    lastState.current = state;
+  }, [state, toast]);
+
   return (
     <form
       action={formAction}
       noValidate
       onSubmit={(event) => {
-        // 추첨은 되돌릴 수 없고 결과가 수정 불가 기록으로 남으므로, 실행 전에 한 번 더 확인한다 (DESIGN 2.3)
-        if (!window.confirm("추첨을 실행하면 되돌릴 수 없습니다. 결과는 수정할 수 없는 기록으로 남습니다.\n실행할까요?")) {
-          event.preventDefault();
-        }
+        // 추첨은 되돌릴 수 없고 결과가 수정 불가 기록으로 남으므로, 실행 전에 앱 확인창으로 한 번 더 확인한다 (DESIGN 2.3)
+        event.preventDefault();
+        pendingData.current = new FormData(event.currentTarget);
+        setWaitPreview(String(pendingData.current.get("waitSeats") ?? ""));
+        setConfirming(true);
       }}
       className="flex flex-col gap-5"
     >
@@ -137,13 +151,9 @@ export function DrawForm({
 
       <div className="flex flex-col gap-3">
         <div>
-          <button
-            type="submit"
-            disabled={pending || full}
-            className="h-12 rounded-lg bg-primary px-8 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            {pending ? "추첨 중…" : redraw ? "재추첨 실행" : "추첨 실행"}
-          </button>
+          <Button type="submit" variant="primary" size="lg" pending={pending} pendingLabel="추첨 중" disabled={full}>
+            {redraw ? "재추첨 실행" : "추첨 실행"}
+          </Button>
         </div>
         {state.message && (
           <p
@@ -156,6 +166,28 @@ export function DrawForm({
           </p>
         )}
       </div>
+      <ConfirmDialog
+        open={confirming}
+        title={redraw ? "재추첨을 실행할까요?" : "추첨을 실행할까요?"}
+        confirmLabel={redraw ? "재추첨 실행" : "추첨 실행"}
+        onClose={() => setConfirming(false)}
+        onConfirm={() => {
+          const data = pendingData.current;
+          setConfirming(false);
+          if (data) startTransition(() => formAction(data));
+        }}
+      >
+        <ul className="flex flex-col gap-1">
+          <li>
+            선발 인원(정원) <strong>{typed ?? "-"}명</strong> · 현재 선정 {selectedCount}명
+          </li>
+          <li>
+            이번에 뽑는 인원 <strong>{toDraw ?? "-"}명</strong> · 대기 <strong>{waitPreview || "0"}명</strong>
+          </li>
+          <li>추첨 대상: {poolLabel}</li>
+        </ul>
+        <p className="font-semibold text-red-800 break-keep">실행하면 되돌릴 수 없고, 결과는 수정할 수 없는 기록으로 남습니다.</p>
+      </ConfirmDialog>
     </form>
   );
 }

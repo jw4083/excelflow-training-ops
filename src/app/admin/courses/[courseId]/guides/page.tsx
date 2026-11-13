@@ -46,7 +46,7 @@ async function GuidesContent({ params, searchParams }: { params: Params; searchP
   return (
     <main className="flex w-full max-w-4xl flex-col gap-6 px-4 py-8">
       <h1 className="text-2xl font-bold tracking-tight">최종 안내</h1>
-      <p className="rounded-lg border border-peach-200 bg-peach-100 p-3 text-base">
+      <p className="rounded-2xl bg-primary-soft p-4 text-base text-zinc-900">
         로그인한 <strong>선정 + 참석 회신</strong> 교육생만 앱에서 확인하는 게시 기능입니다. 카카오톡·문자·메일은 <strong>자동으로 보내지지 않습니다</strong>
         (공통 주소 안내는 지금처럼 담당자가 직접 합니다). 대기·미선정·불참(참석 취소 포함) 교육생은 볼 수 없습니다.
       </p>
@@ -137,6 +137,8 @@ async function GuidesContent({ params, searchParams }: { params: Params; searchP
                       <ArchiveButton
                         action={setGuidePublishedAction.bind(null, courseId, g.id, !g.published)}
                         label={g.published ? "비공개로" : "공개하기"}
+                        title={g.published ? "안내를 비공개로 바꿀까요?" : "안내를 공개할까요?"}
+                        successMessage={g.published ? "비공개로 바꿨습니다." : "공개했습니다. 참석 회신한 최종 선정자에게 보입니다."}
                         confirmText={
                           g.published
                             ? "비공개로 바꾸면 교육생이 이 안내를 볼 수 없습니다. 확인·준비 기록은 남습니다. 바꿀까요?"

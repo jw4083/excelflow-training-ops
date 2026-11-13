@@ -38,7 +38,7 @@ export function FillPanel({
   const [picked, setPicked] = useState("");
 
   return (
-    <li id={`vacancy-${target.id}`} className="flex flex-col gap-3 rounded-lg border border-peach-200 bg-peach-100 p-4 dark:border-amber-700 dark:bg-amber-950">
+    <li id={`vacancy-${target.id}`} className="flex flex-col gap-3 rounded-2xl bg-white p-5 ring-1 ring-amber-300">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-base">
           <strong className="text-lg">{target.name}</strong> · {target.dept} · {target.empNo}{" "}

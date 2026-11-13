@@ -3,6 +3,7 @@
 import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, useState, type ReactNode } from "react";
 import { uploadApplicants, type UploadState } from "@/app/actions/applicants";
+import { Button } from "@/components/ui/Button";
 
 const MAX_BYTES = 1024 * 1024; // importApplicants의 제한과 같은 1MB
 const LIST_LIMIT = 30; // 목록은 처음 30건만 보여 주고 나머지는 "외 N건"으로 줄인다
@@ -53,7 +54,7 @@ export function UploadForm({ children }: { children?: ReactNode }) {
             const file = e.target.files?.[0];
             setFileError(file && file.size > MAX_BYTES ? "파일이 너무 큽니다. 1MB 이하의 엑셀 파일을 올려 주세요." : null);
           }}
-          className="w-full rounded-lg border border-zinc-300 bg-white text-base file:mr-4 file:h-12 file:cursor-pointer file:border-0 file:bg-zinc-100 file:px-4 file:text-base file:font-medium hover:file:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:file:bg-zinc-800 dark:hover:file:bg-zinc-700"
+          className="w-full rounded-xl border border-zinc-300 bg-white text-base file:mr-4 file:h-12 file:cursor-pointer file:border-0 file:bg-zinc-100 file:px-4 file:text-base file:font-medium hover:file:bg-zinc-200 dark:border-zinc-700 dark:bg-zinc-900 dark:file:bg-zinc-800 dark:hover:file:bg-zinc-700"
         />
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           .xlsx 파일만, 한 번에 최대 1,000행까지 올릴 수 있습니다. 첫 줄에 <strong>사번, 이름, 부서</strong> 열이 있어야 하고,
@@ -65,13 +66,9 @@ export function UploadForm({ children }: { children?: ReactNode }) {
           </p>
         )}
         <div>
-          <button
-            type="submit"
-            disabled={pending || fileError !== null}
-            className="h-12 rounded-lg bg-primary px-8 text-base font-semibold text-white transition-colors hover:bg-primary-hover disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            {pending ? "업로드 중…" : "업로드"}
-          </button>
+          <Button type="submit" variant="primary" size="lg" pending={pending} pendingLabel="업로드 중" disabled={fileError !== null}>
+            업로드
+          </Button>
         </div>
       </form>
 

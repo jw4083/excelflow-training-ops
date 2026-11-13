@@ -1,37 +1,33 @@
-// 상태 탭 7개 (전체 + 6종)와 각 탭의 인원 수. 탭을 누르면 주소의 ?status= 값이 바뀌어 같은 화면이 다시 그려진다.
+// 상태 탭 (전체 + 상태별)과 각 탭의 인원 수. 검색어가 있으면 탭을 바꿔도 검색은 유지되고, 숫자도 검색 결과 기준이다.
 import Link from "next/link";
 import { ROSTER_FILTERS, type RosterFilter } from "@/domain/roster";
 
-/** 탭·쪽 이동 주소. "전체"와 1쪽은 주소를 짧게 둔다 */
-export function rosterHref(courseId: string, filter: RosterFilter, page = 1): string {
+/** 탭·쪽 이동 주소. "전체"와 1쪽, 빈 검색어는 주소를 짧게 둔다 */
+export function rosterHref(courseId: string, filter: RosterFilter, page = 1, q = ""): string {
   const query = new URLSearchParams();
   if (filter !== "전체") query.set("status", filter);
+  if (q) query.set("q", q);
   if (page > 1) query.set("page", String(page));
   const text = query.toString();
   return text ? `/admin/courses/${courseId}/roster?${text}` : `/admin/courses/${courseId}/roster`;
 }
 
-export function RosterTabs({ active, counts, courseId }: { active: RosterFilter; counts: Record<RosterFilter, number>; courseId: string }) {
+export function RosterTabs({ active, counts, courseId, q = "" }: { active: RosterFilter; counts: Record<RosterFilter, number>; courseId: string; q?: string }) {
   return (
-    <nav aria-label="상태별 보기" className="flex gap-1 overflow-x-auto border-b border-zinc-200 pb-2 dark:border-zinc-800">
+    <nav aria-label="상태별 보기" className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
       {ROSTER_FILTERS.map((filter) => {
         const isActive = filter === active;
         return (
           <Link
             key={filter}
-            href={rosterHref(courseId, filter)}
+            href={rosterHref(courseId, filter, 1, q)}
             aria-current={isActive ? "page" : undefined}
-            className={`flex h-11 shrink-0 items-center gap-2 rounded-lg px-4 text-base font-medium whitespace-nowrap transition-colors ${
-              isActive
-                ? "bg-primary text-white dark:bg-zinc-100 dark:text-zinc-900"
-                : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            className={`ui-btn flex h-10 shrink-0 items-center gap-1.5 rounded-full px-4 text-base font-semibold whitespace-nowrap ${
+              isActive ? "bg-zinc-900 text-white" : "bg-white text-zinc-700 hover:bg-zinc-100"
             }`}
           >
             {filter}
-            <span
-              className={`text-sm tabular-nums ${isActive ? "opacity-90" : "text-zinc-500 dark:text-zinc-400"}`}
-              aria-label={`${counts[filter]}명`}
-            >
+            <span className={`text-sm tabular-nums ${isActive ? "text-white/80" : "text-zinc-500"}`} aria-label={`${counts[filter]}명`}>
               {counts[filter]}
             </span>
           </Link>

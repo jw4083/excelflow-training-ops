@@ -4,13 +4,14 @@
 import { CourseIdField } from "@/components/admin/CourseIdField";
 import { useActionState, useState } from "react";
 import { addManualAction, type ManualAddState } from "@/app/actions/manualAdd";
+import { Button } from "@/components/ui/Button";
+import { inputClass } from "@/components/ui/styles";
 
 export interface VacancyOption {
   id: string;
   label: string; // 예: "김테스트05 (불참)"
 }
 
-const inputClass = "h-12 w-full rounded-lg border border-zinc-300 bg-white px-3 text-base dark:border-zinc-700 dark:bg-zinc-900";
 
 export function ManualAdd({
   vacancies,
@@ -37,14 +38,9 @@ export function ManualAdd({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-expanded={open}
-          className="h-11 rounded-lg border border-zinc-300 px-4 text-base font-semibold hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-        >
+        <Button variant="secondary" onClick={() => setOpen((v) => !v)} aria-expanded={open}>
           {open ? "수기 추가 닫기" : "수기 추가"}
-        </button>
+        </Button>
         {!open && state?.status === "success" && (
           <p role="status" className="text-base font-medium text-green-700 dark:text-green-400">
             {state.message}
@@ -55,7 +51,7 @@ export function ManualAdd({
       {open && (
         <form
           action={action}
-          className="flex flex-col gap-4 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800"
+          className="flex flex-col gap-4 pt-1 pb-2"
         >
       <CourseIdField />
           <p className="text-base text-zinc-700 dark:text-zinc-300">선정 이후에 직접 명단에 넣습니다. 추가된 사람은 &quot;선정&quot;과 &quot;수기&quot; 표시가 붙습니다.</p>
@@ -115,16 +111,12 @@ export function ManualAdd({
           )}
 
           <div className="flex flex-wrap gap-2">
-            <button
-              type="submit"
-              disabled={pending}
-              className="h-12 rounded-lg bg-primary px-6 text-base font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
-            >
-              {pending ? "처리 중…" : over ? "정원 초과 추가" : "추가"}
-            </button>
-            <button type="button" onClick={() => setOpen(false)} className="h-12 rounded-lg border border-zinc-300 px-6 text-base font-medium dark:border-zinc-700">
+            <Button type="submit" variant={over ? "danger" : "primary"} size="lg" pending={pending}>
+              {over ? "정원 초과 추가" : "추가"}
+            </Button>
+            <Button variant="secondary" size="lg" onClick={() => setOpen(false)} disabled={pending}>
               취소
-            </button>
+            </Button>
           </div>
         </form>
       )}

@@ -55,7 +55,7 @@ export function CopyTraineeUrlButton() {
         onClick={onClick}
         aria-label="교육생 주소 복사"
         title="교육생이 접속할 공통 주소를 복사합니다"
-        className="h-11 shrink-0 rounded-lg border border-zinc-300 px-4 text-base font-medium whitespace-nowrap hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        className="ui-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold whitespace-nowrap hover:bg-zinc-50 active:bg-zinc-100 sm:h-11 sm:px-4 sm:text-base"
       >
         <span className="sm:hidden">주소 복사</span>
         <span className="hidden sm:inline">교육생 주소 복사</span>

@@ -12,7 +12,7 @@ export async function NoticeBell() {
     <Link
       href="/admin/notifications"
       aria-label={s.unread > 0 ? `회신 알림 ${s.unread}건 (참석 ${s.unreadAttend}, 불참 ${s.unreadAbsent})` : "회신 알림"}
-      className="inline-flex h-11 items-center gap-2 rounded-lg border border-zinc-300 px-4 text-base font-medium whitespace-nowrap hover:bg-zinc-100"
+      className="ui-btn inline-flex h-10 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold whitespace-nowrap hover:bg-zinc-50 active:bg-zinc-100 sm:h-11 sm:px-4 sm:text-base"
     >
       회신 알림
       {s.unread > 0 && (

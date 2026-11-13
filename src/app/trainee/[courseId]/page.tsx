@@ -17,7 +17,8 @@ import { TRAINEE_PATH } from "@/lib/paths";
 import { findMyEnrollment } from "@/lib/traineeCourse";
 import { getCatalog } from "@/store";
 import { loadMyGuides } from "@/lib/guides";
-import { GuidesSection } from "../guides-section";
+import { buttonClass } from "@/components/ui/styles";
+import { guideTodoCounts, GuidesSection } from "../guides-section";
 import { ReplyForm } from "../reply-form";
 import { ResourceLinks } from "../resource-links";
 import { card, TONE } from "../tone";
@@ -65,24 +66,61 @@ async function CourseView({ params }: { params: Params }) {
   const guides = await loadMyGuides(store, me.id);
   const updated = lastUpdatedText(course);
   const tone = TONE[msg.tone];
+  // 맨 위 "지금 할 일": 회신 전이면 회신, 참석 회신 뒤에는 남은 안내 확인·준비
+  const needsReply = me.status === "선정" && !reply && mode.mode !== "closed";
+  const todo = guideTodoCounts(guides);
 
   return (
     <section className="flex flex-col gap-4">
       {/* 맨 위: 내 과정 목록으로 돌아가기, 최종 수정 일시(PRD M2-5), 오른쪽 위 로그아웃 */}
       <div className="flex items-center justify-between gap-3">
-        <Link href={TRAINEE_PATH} className="inline-flex h-11 shrink-0 items-center rounded-xl border border-zinc-300 bg-white px-4 text-base font-medium whitespace-nowrap hover:bg-zinc-100">
+        <Link href={TRAINEE_PATH} className={buttonClass("secondary")}>
           ← 내 과정
         </Link>
         <form action={logoutTraineeAction}>
-          <button type="submit" className="h-11 shrink-0 rounded-xl border border-zinc-300 bg-white px-4 text-base font-medium whitespace-nowrap hover:bg-zinc-100">
+          <button type="submit" className={buttonClass("text")}>
             로그아웃
           </button>
         </form>
       </div>
-      {updated && <p className="text-base text-zinc-600">최종 수정 일시: {updated}</p>}
+      {updated && <p className="text-sm text-zinc-600">최종 수정 일시: {updated}</p>}
+
+      {needsReply && (
+        <div className="rounded-card bg-primary p-5 text-white">
+          <p className="text-sm font-semibold text-white/85">지금 할 일</p>
+          <p className="mt-1 text-xl font-bold">참석 여부를 회신해 주세요</p>
+          {deadline && (
+            <p className="mt-1 text-base">
+              회신 마감 {deadline.text} · <strong>{deadline.remaining}</strong>
+            </p>
+          )}
+          <a href="#reply" className={buttonClass("secondary", "lg", "mt-4 w-full border-0 text-primary")}>
+            회신하러 가기
+          </a>
+        </div>
+      )}
+      {guides.length > 0 && todo.toConfirm + todo.toPrepare > 0 && (
+        <div className="rounded-card bg-primary p-5 text-white">
+          <p className="text-sm font-semibold text-white/85">지금 할 일</p>
+          <ul className="mt-1 flex flex-col gap-0.5 text-lg font-bold">
+            {todo.toConfirm > 0 && (
+              <li>
+                확인할 안내 {todo.toConfirm}건{todo.changed > 0 && <span className="text-base font-semibold"> (내용 변경 {todo.changed}건 포함)</span>}
+              </li>
+            )}
+            {todo.toPrepare > 0 && <li>준비할 항목 {todo.toPrepare}건</li>}
+          </ul>
+          <a href="#guides" className={buttonClass("secondary", "lg", "mt-4 w-full border-0 text-primary")}>
+            안내 보러 가기
+          </a>
+        </div>
+      )}
+      {guides.length > 0 && todo.toConfirm + todo.toPrepare === 0 && (
+        <p className="rounded-card bg-emerald-50 px-5 py-4 text-base font-semibold text-emerald-900">✓ 최종 안내를 모두 확인하고 준비했습니다.</p>
+      )}
 
       <div className={card}>
-        <h2 className="text-base font-bold text-zinc-600">내 결과</h2>
+        <h2 className="text-lg font-bold">내 결과</h2>
         <p className="mt-2 text-base">
           <strong className="font-bold">{me.name}</strong>님 · {me.dept}
         </p>
@@ -93,11 +131,14 @@ async function CourseView({ params }: { params: Params }) {
         <p className="mt-3 text-base break-keep">{msg.detail}</p>
       </div>
 
+      {/* 참석 회신 뒤에는 남은 안내를 교육 안내보다 먼저 보여 준다 */}
+      <GuidesSection courseId={courseId} guides={guides} nowIso={nowIso} />
+
       {course && (
         <div className="rounded-card border border-peach-200 bg-peach-100 p-5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-base font-bold text-peach-700">교육 안내</h2>
+              <h2 className="text-lg font-bold text-peach-700">교육 안내</h2>
               <p className="mt-2 text-lg font-bold break-keep">{course.name}</p>
             </div>
             <Mascot name="지키" size={80} />
@@ -120,8 +161,8 @@ async function CourseView({ params }: { params: Params }) {
       )}
 
       {hasReplySection(me.status) && (
-        <div className={card}>
-          <h2 className="text-base font-bold text-zinc-600">회신</h2>
+        <div id="reply" className={`${card} scroll-mt-4`}>
+          <h2 className="text-lg font-bold">회신</h2>
           {deadline ? (
             <p className="mt-2 text-base">
               회신 기한: {deadline.text} <strong className="font-bold text-primary">({deadline.remaining})</strong>
@@ -158,7 +199,6 @@ async function CourseView({ params }: { params: Params }) {
         </div>
       )}
 
-      <GuidesSection courseId={courseId} guides={guides} nowIso={nowIso} />
 
       {/* 링크 영역의 빈 자리 (PRD M2-12): 카톡방·퀴즈·설문 링크는 이번에 만들지 않으므로 지금은 아무것도 넘기지 않아 보이지 않는다 */}
       <ResourceLinks />

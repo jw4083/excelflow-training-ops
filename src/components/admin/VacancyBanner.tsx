@@ -16,7 +16,7 @@ export async function VacancyBanner({ courseId }: { courseId: string }) {
   return (
     <div
       role="status"
-      className="flex flex-col gap-1 border-b border-peach-200 bg-peach-100 px-4 py-3 text-base text-zinc-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
+      className="flex flex-col gap-1 border-b border-amber-200 bg-amber-50 px-4 py-3 text-base text-zinc-900 sm:flex-row sm:items-center sm:justify-between dark:border-amber-700 dark:bg-amber-950 dark:text-amber-100"
     >
       <p>
         {alert.newCancels > 0 && (
@@ -26,7 +26,7 @@ export async function VacancyBanner({ courseId }: { courseId: string }) {
           충원이 필요한 자리가 {alert.total}개 있습니다
         </strong>{" "}
         {parts && `(${parts})`}
-        <span className="block text-sm text-peach-700 dark:text-amber-300">
+        <span className="block text-sm text-amber-900">
           {alert.names.join(", ")}
           {rest > 0 ? ` 외 ${rest}명` : ""}
         </span>

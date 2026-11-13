@@ -2,42 +2,43 @@
 
 /*
  * 디자인 토큰 (캠코 교육 운영 앱)
- * - 참고: Craft의 정갈한 카드와 넉넉한 여백, Headspace의 친근한 색면과 캐릭터 배치, Linear의 촘촘하고 조용한 목록 배치
- * - 따뜻한 흰색 배경 · 짙은 남색 글자 · 파란 주요 버튼 · 연한 살구색 안내 카드
+ * - 밝은 회색 바탕 · 흰 콘텐츠 영역 · 짙은 본문 글자 · 파란 주요 버튼. 영역은 테두리보다 여백과 흰 바탕으로 나눈다.
+ * - 살구색과 마스코트는 교육생 화면의 교육 안내·회신 완료에만 포인트로 쓴다.
  * - 이 앱은 밝은 화면 하나만 쓴다(어두운 화면 전환 없음): 아래 dark 변형을 끊어 두어 기존 dark: 글자가 작동하지 않는다.
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: #fffbf5; /* 따뜻한 흰색 */
-  --foreground: #14213d; /* 짙은 남색 */
+  --background: #f3f4f6; /* 밝은 회색 바탕 */
+  --foreground: #1a1f27; /* 짙은 본문 */
 }
 
 @theme {
-  /* 기존 회색(zinc) 계열을 따뜻한 남색 계열로 바꿔, 화면 전체가 같은 색 체계를 쓰게 한다 */
-  --color-zinc-50: #fbf7f0;
-  --color-zinc-100: #f4eee4;
-  --color-zinc-200: #e8e0d3;
-  --color-zinc-300: #d8cebf;
-  --color-zinc-400: #9aa1b3;
-  --color-zinc-500: #6f7893;
-  --color-zinc-600: #55607f; /* 보조 글자 (흰 바탕 위 대비 5:1 이상) */
-  --color-zinc-700: #3b4767;
-  --color-zinc-800: #232f52;
-  --color-zinc-900: #14213d;
+  /* 회색 단계: 차가운 중립 회색. 600 이상은 흰 바탕 위 보조 글자로도 대비 4.5:1 이상 */
+  --color-zinc-50: #f8f9fa;
+  --color-zinc-100: #f1f3f5;
+  --color-zinc-200: #e6e9ec;
+  --color-zinc-300: #d2d7dc;
+  --color-zinc-400: #a4acb5;
+  --color-zinc-500: #737c87;
+  --color-zinc-600: #525b67; /* 보조 설명 글자 */
+  --color-zinc-700: #3a424d;
+  --color-zinc-800: #272e37;
+  --color-zinc-900: #1a1f27;
 
   /* 파란 주요 버튼·선택 표시 */
-  --color-primary: #2459e8;
-  --color-primary-hover: #1b47c4;
-  --color-primary-soft: #e8efff;
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4fd8;
+  --color-primary-active: #1a43b8;
+  --color-primary-soft: #eaf1ff;
 
-  /* 연한 살구색 안내 카드 */
+  /* 연한 살구색: 교육생 안내·완료 화면의 포인트 전용 */
   --color-peach-50: #fff5ec;
   --color-peach-100: #ffeadb;
   --color-peach-200: #fbd4b8;
   --color-peach-700: #8a4a1d;
 
-  --radius-card: 1.25rem; /* 카드 모서리 (Craft의 둥근 카드) */
+  --radius-card: 1.25rem;
 }
 
 @theme inline {
@@ -55,14 +56,68 @@ body {
   font-size: 16px; /* 휴대폰에서 글자가 너무 작아지지 않게 (PRD M2-11) */
 }
 
-/* 키보드로 이동할 때 보이는 파란 테두리 */
+/* 키보드로 이동할 때 보이는 파란 테두리 (마우스 클릭에는 나타나지 않는다) */
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
 }
 
-/* 입력 칸·버튼이 한 번 눌렸다 떼질 때 부드럽게 */
+/* ───────── 누름 반응 (버튼만. 표·긴 행은 줄이지 않는다) ───────── */
 button,
-a {
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+a,
+summary,
+input[type="checkbox"] {
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    color 0.12s ease,
+    box-shadow 0.12s ease,
+    transform 0.1s ease;
+}
+.ui-btn:active:not(:disabled):not([aria-disabled="true"]) {
+  transform: scale(0.97);
+}
+input[type="checkbox"] {
+  accent-color: var(--color-primary);
+}
+input[type="checkbox"]:active:not(:disabled) {
+  transform: scale(0.92);
+}
+
+/* 확인창: 짧게 나타나고, 뒤 화면은 살짝 어둡게 */
+dialog.ui-dialog::backdrop {
+  background: rgb(15 23 42 / 0.45);
+}
+dialog.ui-dialog[open] {
+  animation: ui-pop 0.14s ease-out;
+}
+@keyframes ui-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+.ui-toast {
+  animation: ui-rise 0.16s ease-out;
+}
+@keyframes ui-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* 동작 줄이기 설정을 켠 사용자에게는 움직임을 없앤다 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ui-btn:active:not(:disabled),
+  input[type="checkbox"]:active:not(:disabled) {
+    transform: none;
+  }
 }

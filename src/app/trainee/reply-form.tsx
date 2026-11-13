@@ -3,6 +3,7 @@
 import { startTransition, useActionState, useRef, useState } from "react";
 import { submitReplyAction, type ReplyFormState } from "@/app/actions/reply";
 import { Mascot } from "@/components/Mascot";
+import { Button } from "@/components/ui/Button";
 import { ABSENT_DETAIL_MAX, ABSENT_DETAIL_MIN, ROOMMATE_FIELD_MAX } from "@/domain/replyRules";
 
 export interface ReplyDefaults {
@@ -211,12 +212,12 @@ export function ReplyForm({
             <li>회신 기한이 지난 뒤에는 다시 참석하려면 담당자에게 문의해야 합니다.</li>
           </ul>
           <div className="flex gap-2">
-            <button type="button" onClick={() => send(true)} className="h-12 flex-1 rounded-lg bg-red-700 text-base font-bold text-white">
+            <Button variant="danger" size="lg" className="flex-1" pending={pending} onClick={() => send(true)}>
               불참으로 확정
-            </button>
-            <button type="button" onClick={() => setConfirmHidden(true)} className="h-12 flex-1 rounded-lg border border-zinc-300 bg-white text-base font-medium">
+            </Button>
+            <Button variant="secondary" size="lg" className="flex-1" disabled={pending} onClick={() => setConfirmHidden(true)}>
               돌아가기
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -234,13 +235,9 @@ export function ReplyForm({
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={pending || confirming}
-        className="h-12 w-full rounded-lg bg-primary text-base font-bold text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
-      >
-        {pending ? "저장 중…" : cancelOnly ? "불참으로 변경하기" : (submitLabel ?? (defaults.submittedAt ? "회신 수정하기" : "회신 제출하기"))}
-      </button>
+      <Button type="submit" variant="primary" size="lg" className="w-full" pending={pending && !confirming} pendingLabel="저장 중" disabled={confirming}>
+        {cancelOnly ? "불참으로 변경하기" : (submitLabel ?? (defaults.submittedAt ? "회신 수정하기" : "회신 제출하기"))}
+      </Button>
     </form>
   );
 }

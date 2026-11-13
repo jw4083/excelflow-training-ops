@@ -7,6 +7,7 @@ import { COURSE_NOT_FOUND, courseBase, openAdminCourseFromForm } from "@/lib/adm
 import { confirmFill, excludeSelected } from "@/lib/fill";
 
 export interface FillState {
+  ok?: boolean; // 처리에 성공했는가 (성공 문구와 실패 이유를 구분한다)
   message?: string;
   needsOver?: boolean; // 정원을 넘는다는 경고를 보여 주고 다시 확인받아야 함
 }
@@ -47,5 +48,5 @@ export async function excludeAction(_prev: FillState | undefined, formData: Form
 
   revalidatePath("/admin", "layout");
   if (text(formData, "next") === "fill") redirect(`${courseBase(text(formData, "courseId"))}/replies?open=${encodeURIComponent(traineeId)}`);
-  return { message: "선정을 취소했습니다. 충원이 필요한 자리로 알림에 표시됩니다." };
+  return { ok: true, message: "선정을 취소했습니다. 충원이 필요한 자리로 알림에 표시됩니다." };
 }

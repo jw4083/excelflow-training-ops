@@ -18,12 +18,14 @@ export async function CourseBar({ courseId }: { courseId: string }) {
           <ArchiveButton
             action={unarchiveCourseAction.bind(null, courseId)}
             label="보관 해제"
+            title="보관을 해제할까요?"
             confirmText="보관을 해제하면 이 과정을 다시 바꿀 수 있고, 교육생에게 다시 보입니다. 해제할까요?"
           />
         ) : (
           <ArchiveButton
             action={archiveCourseAction.bind(null, courseId)}
             label="과정 보관"
+            title="과정을 보관할까요?"
             confirmText="보관하면 이 과정은 조회만 가능하고 교육생에게 보이지 않습니다. 나중에 보관을 해제할 수 있습니다. 보관할까요?"
           />
         )}

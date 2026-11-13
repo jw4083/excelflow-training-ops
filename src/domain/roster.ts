@@ -101,6 +101,22 @@ export function parseFilter(value: string | string[] | undefined): RosterFilter 
   return (ROSTER_FILTERS as readonly string[]).includes(v ?? "") ? (v as RosterFilter) : "전체";
 }
 
+/** 주소의 ?q= 검색어 (앞뒤 공백 제거, 최대 50자). 없으면 빈 글자 */
+export function parseQuery(value: string | string[] | undefined): string {
+  const v = Array.isArray(value) ? value[0] : value;
+  return (v ?? "").trim().slice(0, 50);
+}
+
+/**
+ * 이름·사번·부서로 찾는다 (과정 전체 명단 대상, 대소문자·띄어쓰기 무시). 검색어가 없으면 그대로 돌려준다.
+ * 상태 탭과 함께 쓴다: 먼저 검색으로 줄이고 그 안에서 탭으로 거른다.
+ */
+export function searchTrainees<T extends Pick<Trainee, "name" | "empNo" | "dept">>(trainees: T[], query: string): T[] {
+  const q = query.replace(/\s+/g, "").toLowerCase();
+  if (!q) return trainees;
+  return trainees.filter((t) => [t.name, t.empNo, t.dept].some((v) => v.replace(/\s+/g, "").toLowerCase().includes(q)));
+}
+
 /** 주소의 ?page= 값을 쪽 번호로 바꾼다. 없거나 엉뚱한 값이면 1 */
 export function parsePage(value: string | string[] | undefined): number {
   const v = Array.isArray(value) ? value[0] : value;
